@@ -7,9 +7,10 @@ pool:
 variables:
   buildConfiguration: 'Release'
   dotnetVersion: '10.x'
-  azureSubscription: 'your-azure-subscription-connection'
-  webAppName: 'your-webapp-name'
-  resourceGroupName: 'your-resource-group'
+  # These variables should be defined in your pipeline settings or variable groups
+  # azureSubscription: Set in pipeline variables
+  # webAppName: Set in pipeline variables  
+  # resourceGroupName: Set in pipeline variables
 
 stages:
 - stage: Build
