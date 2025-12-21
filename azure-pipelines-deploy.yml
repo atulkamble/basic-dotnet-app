@@ -1,3 +1,32 @@
+# Azure DevOps Pipeline for .NET Core Web Application
+# 
+# SETUP INSTRUCTIONS:
+# Before running this pipeline, you need to:
+#
+# 1. CREATE AZURE SERVICE CONNECTION:
+#    - Go to Project Settings → Service connections
+#    - Click "New service connection" → "Azure Resource Manager"
+#    - Choose "Service principal (automatic)"
+#    - Select your Azure subscription
+#    - Name it (e.g., "azure-service-connection")
+#    - Grant access permission to all pipelines
+#
+# 2. SET PIPELINE VARIABLES:
+#    - Go to your pipeline → Edit → Variables
+#    - Add the following variables:
+#      * azureSubscription: Name of your service connection (from step 1)
+#      * webAppName: Your Azure Web App name
+#      * resourceGroupName: Your Azure resource group name
+#
+# 3. AZURE RESOURCES REQUIRED:
+#    - Azure Web App (App Service)
+#    - Resource Group
+#    - App Service Plan
+#
+# 4. ALTERNATIVE - HARDCODE VALUES:
+#    - Uncomment and update the variables below instead of using pipeline variables
+#    - Replace placeholder values with your actual Azure resource names
+
 trigger:
 - main
 
@@ -7,10 +36,17 @@ pool:
 variables:
   buildConfiguration: 'Release'
   dotnetVersion: '10.x'
-  # These variables should be defined in your pipeline settings or variable groups
-  # azureSubscription: Set in pipeline variables
-  # webAppName: Set in pipeline variables  
-  # resourceGroupName: Set in pipeline variables
+  
+  # OPTION 1: Use pipeline variables (recommended for security)
+  # Set these in Azure DevOps pipeline variables:
+  # - azureSubscription
+  # - webAppName  
+  # - resourceGroupName
+  
+  # OPTION 2: Hardcode values (uncomment and update these lines)
+  # azureSubscription: 'your-service-connection-name'
+  # webAppName: 'your-web-app-name'
+  # resourceGroupName: 'your-resource-group-name'
 
 stages:
 - stage: Build
@@ -65,11 +101,22 @@ stages:
       runOnce:
         deploy:
           steps:
+          # Download the build artifacts from the Build stage
           - task: AzureWebApp@1
             displayName: 'Deploy to Azure Web App'
             inputs:
+              # Service connection name - must match the name created in Azure DevOps
               azureSubscription: '$(azureSubscription)'
               appType: 'webApp'
+              # Azure Web App name - must exist in your Azure subscription
               appName: '$(webAppName)'
+              # Resource group containing the Web App
               resourceGroupName: '$(resourceGroupName)'
+              # Path to the deployment package created in Build stage
               package: '$(Pipeline.Workspace)/webapp/*.zip'
+              
+              # TROUBLESHOOTING TIPS:
+              # - Ensure your service connection has contributor access to the resource group
+              # - Verify the Web App name exists and is correctly spelled
+              # - Check that the resource group name matches exactly
+              # - Make sure the Web App is configured for .NET runtime
