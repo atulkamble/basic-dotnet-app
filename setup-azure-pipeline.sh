@@ -47,26 +47,55 @@ echo -e "${GREEN}Step 2: Setting subscription${NC}"
 az account set --subscription "$SUBSCRIPTION"
 
 echo ""
-echo -e "${GREEN}Step 3: Creating resource group${NC}"
-az group create --name "$RESOURCE_GROUP" --location "$LOCATION"
+echo -e "${GREEN}Step 3: Checking/Creating resource group${NC}"
+
+# Check if resource group exists
+if az group show --name "$RESOURCE_GROUP" &>/dev/null; then
+    echo "Resource group '$RESOURCE_GROUP' already exists."
+    EXISTING_LOCATION=$(az group show --name "$RESOURCE_GROUP" --query location -o tsv)
+    echo "Existing location: $EXISTING_LOCATION"
+    
+    if [ "$EXISTING_LOCATION" != "$LOCATION" ]; then
+        echo -e "${YELLOW}Warning: Resource group exists in '$EXISTING_LOCATION', but you specified '$LOCATION'${NC}"
+        echo "Using existing location: $EXISTING_LOCATION"
+        LOCATION="$EXISTING_LOCATION"
+    fi
+else
+    echo "Creating new resource group in '$LOCATION'..."
+    az group create --name "$RESOURCE_GROUP" --location "$LOCATION"
+fi
 
 echo ""
-echo -e "${GREEN}Step 4: Creating App Service Plan${NC}"
+echo -e "${GREEN}Step 4: Checking/Creating App Service Plan${NC}"
 APP_SERVICE_PLAN="${WEB_APP_NAME}-plan"
-az appservice plan create \
-    --name "$APP_SERVICE_PLAN" \
-    --resource-group "$RESOURCE_GROUP" \
-    --location "$LOCATION" \
-    --sku B1 \
-    --is-linux false
+
+# Check if App Service Plan already exists
+if az appservice plan show --name "$APP_SERVICE_PLAN" --resource-group "$RESOURCE_GROUP" &>/dev/null; then
+    echo "App Service Plan '$APP_SERVICE_PLAN' already exists. Skipping creation."
+else
+    echo "Creating App Service Plan '$APP_SERVICE_PLAN'..."
+    az appservice plan create \
+        --name "$APP_SERVICE_PLAN" \
+        --resource-group "$RESOURCE_GROUP" \
+        --location "$LOCATION" \
+        --sku B1 \
+        --is-linux false
+fi
 
 echo ""
-echo -e "${GREEN}Step 5: Creating Web App${NC}"
-az webapp create \
-    --name "$WEB_APP_NAME" \
-    --resource-group "$RESOURCE_GROUP" \
-    --plan "$APP_SERVICE_PLAN" \
-    --runtime "DOTNET|8.0"
+echo -e "${GREEN}Step 5: Checking/Creating Web App${NC}"
+
+# Check if Web App already exists
+if az webapp show --name "$WEB_APP_NAME" --resource-group "$RESOURCE_GROUP" &>/dev/null; then
+    echo "Web App '$WEB_APP_NAME' already exists. Skipping creation."
+else
+    echo "Creating Web App '$WEB_APP_NAME'..."
+    az webapp create \
+        --name "$WEB_APP_NAME" \
+        --resource-group "$RESOURCE_GROUP" \
+        --plan "$APP_SERVICE_PLAN" \
+        --runtime "DOTNET|8.0"
+fi
 
 echo ""
 echo -e "${GREEN}Step 6: Getting subscription ID${NC}"

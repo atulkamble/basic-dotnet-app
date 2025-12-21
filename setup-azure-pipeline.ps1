@@ -64,8 +64,25 @@ try {
     az account set --subscription $Subscription
 
     Write-Host ""
-    Write-Host "Step 3: Creating resource group" -ForegroundColor $Green
-    az group create --name $ResourceGroup --location $Location
+    Write-Host "Step 3: Checking/Creating resource group" -ForegroundColor $Green
+    
+    # Check if resource group exists
+    $ExistingRG = az group show --name $ResourceGroup 2>$null | ConvertFrom-Json
+    
+    if ($ExistingRG) {
+        Write-Host "Resource group '$ResourceGroup' already exists."
+        $ExistingLocation = $ExistingRG.location
+        Write-Host "Existing location: $ExistingLocation"
+        
+        if ($ExistingLocation -ne $Location) {
+            Write-Host "Warning: Resource group exists in '$ExistingLocation', but you specified '$Location'" -ForegroundColor $Yellow
+            Write-Host "Using existing location: $ExistingLocation"
+            $Location = $ExistingLocation
+        }
+    } else {
+        Write-Host "Creating new resource group in '$Location'..."
+        az group create --name $ResourceGroup --location $Location
+    }
 
     Write-Host ""
     Write-Host "Step 4: Creating App Service Plan" -ForegroundColor $Green
