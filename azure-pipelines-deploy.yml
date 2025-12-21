@@ -1,3 +1,10 @@
+# ⚠️  IMPORTANT: UPDATE REQUIRED BEFORE RUNNING ⚠️
+#
+# This pipeline will FAIL until you update the following values:
+# 1. Line ~35: azureSubscription - Replace with your service connection name
+# 2. Line ~36: webAppName - Replace with your Azure Web App name  
+# 3. Line ~37: resourceGroupName - Replace with your resource group name
+#
 # Azure DevOps Pipeline for .NET Core Web Application
 # 
 # SETUP INSTRUCTIONS:
@@ -37,16 +44,21 @@ variables:
   buildConfiguration: 'Release'
   dotnetVersion: '10.x'
   
+  # REQUIRED: Update these values before running the pipeline
+  # Method 1: Set as pipeline variables (go to pipeline → Edit → Variables)
+  # Method 2: Uncomment and update the values below
+  
+  # UNCOMMENT AND UPDATE THESE VALUES:
+  azureSubscription: 'UPDATE-THIS-SERVICE-CONNECTION-NAME'
+  webAppName: 'UPDATE-THIS-WEB-APP-NAME'
+  resourceGroupName: 'UPDATE-THIS-RESOURCE-GROUP-NAME'
+  
+  # After updating values above, you can delete this section:
   # OPTION 1: Use pipeline variables (recommended for security)
   # Set these in Azure DevOps pipeline variables:
   # - azureSubscription
   # - webAppName  
   # - resourceGroupName
-  
-  # OPTION 2: Hardcode values (uncomment and update these lines)
-  # azureSubscription: 'your-service-connection-name'
-  # webAppName: 'your-web-app-name'
-  # resourceGroupName: 'your-resource-group-name'
 
 stages:
 - stage: Build
