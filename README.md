@@ -1,52 +1,195 @@
-# 🚀 Basic .NET Web App Setup Guide
+# 🚀 Basic .NET Web Application – Complete Setup & Deployment Guide
 
-This repository demonstrates how to **install .NET**, **create a basic ASP.NET Core web application**, and **run it locally** using the .NET CLI.
+<div align="center">
 
----
+**Basic .NET WebApp**  
+*Built with ❤️ using ASP.NET Core*
 
-## 📌 Prerequisites
+</div>
 
-Before you begin, ensure the following:
+## 📌 Project Overview
 
-* 💻 **Operating System**: Windows (recommended for Chocolatey)
-* 🧰 **Package Manager**: Chocolatey installed
-* 🌐 **Internet Connection**
+This project demonstrates how to:
 
----
+✅ Install .NET SDK  
+✅ Create a basic ASP.NET Core Web Application  
+✅ Run and test the application locally  
+✅ Open and manage the project in VS Code  
+✅ Containerize the app using Docker  
+✅ Deploy the application to AWS Elastic Beanstalk  
+✅ Push the source code to GitHub  
 
-## 🔧 Step 1: Install .NET SDK
+## 🧰 Prerequisites
 
-### Option 1: Install via Chocolatey (Recommended)
+Ensure the following tools are installed:
 
-Open **PowerShell as Administrator** and run:
+✅ .NET SDK  
+✅ Chocolatey (Windows)  
+✅ Visual Studio Code  
+✅ Git  
+✅ AWS CLI  
+✅ Elastic Beanstalk CLI (eb)  
+✅ Docker (for containerization)  
 
-```powershell
-choco install dotnet -y
+## 🔹 Step 1: Install .NET SDK
+
+**Download from the official site:**  
+👉 https://dotnet.microsoft.com/en-us/download
+
+### 📦 Install using Chocolatey (Windows)
+```bash
+choco install dotnet
 ```
 
-### Option 2: Manual Installation
-
-Download the latest .NET SDK from the official website:
-
-🔗 [https://dotnet.microsoft.com/en-us/download](https://dotnet.microsoft.com/en-us/download)
-
----
-
-## ✅ Step 2: Verify .NET Installation
-
-Confirm that .NET is installed correctly:
-
+### 🔍 Verify Installation
 ```bash
 dotnet --version
 ```
 
-You should see the installed SDK version displayed.
+## 🔹 Step 2: Create a Basic .NET Web App
 
----
+### 🆕 Create Project Using Template
+```bash
+dotnet new webapp -n basic-dotnet-webapp
+```
 
-## 🏗️ Step 3: Create a New Web Application
+### 📂 Navigate to Project Directory
+```bash
+cd basic-dotnet-webapp
+```
 
-Use the built-in templates to create a basic ASP.NET Core web app:
+### 🔨 Build the Application
+```bash
+dotnet build
+```
+
+### ▶️ Run the Application
+```bash
+dotnet run
+```
+
+**📌 Application runs by default on:**  
+http://localhost:5000 or https://localhost:5001
+
+## 🎨 Create a Basic .NET Web App with UI
+
+ASP.NET WebApp template includes Razor Pages UI by default.
+
+```bash
+dotnet new webapp -n BasicDotNetApp
+dotnet build
+dotnet run
+```
+
+You can customize UI files from:
+
+```
+Pages/
+ ├── Index.cshtml
+ ├── Privacy.cshtml
+ └── Shared/
+```
+
+## 🔹 Step 3: VS Code Setup
+
+### 🔌 Recommended VS Code Extensions
+
+Install the following plugins:
+
+- GitHub Copilot
+- GitHub Repositories  
+- AWS Toolkit
+- Python
+- Pip
+
+### 📂 Open Project in VS Code
+```bash
+code .
+```
+
+## 🔹 Step 4: Create Project Manually (Optional)
+```bash
+mkdir project
+cd project
+dotnet new webapp
+dotnet build
+dotnet run
+```
+
+## 🐳 Step 5: Create Dockerfile
+
+Create a Dockerfile in the project root:
+
+```dockerfile
+FROM mcr.microsoft.com/dotnet/aspnet:8.0
+WORKDIR /app
+COPY bin/Release/net8.0/publish/ .
+ENTRYPOINT ["dotnet", "BasicDotNetApp.dll"]
+```
+
+### 📦 Publish App for Docker
+```bash
+dotnet publish -c Release
+```
+
+## ☁️ Step 6: Deploy to AWS Elastic Beanstalk
+
+### 🔧 Initialize EB Environment
+```bash
+eb init
+```
+
+- Select region
+- Choose Docker or .NET platform
+- Configure IAM if prompted
+
+### 🚀 Create Production Environment
+```bash
+eb create production
+```
+
+### 🌐 Open Application in Browser
+```bash
+eb open
+```
+
+### ❌ Terminate Environment (Cleanup)
+```bash
+eb terminate production
+```
+
+## 🔹 Step 7: Push Code to GitHub
+
+```bash
+git init
+git add .
+git commit -m "Initial commit - Basic .NET WebApp"
+git branch -M main
+git remote add origin https://github.com/<username>/<repo-name>.git
+git push -u origin main
+```
+
+## 📁 Project Structure
+
+```
+basic-dotnet-webapp/
+├── Pages/
+├── wwwroot/
+├── Program.cs
+├── appsettings.json
+├── Dockerfile
+├── README.md
+└── basic-dotnet-webapp.csproj
+```
+
+## ✅ Key Takeaways
+
+✔ ASP.NET Core WebApp created using templates  
+✔ UI enabled using Razor Pages  
+✔ Local build & run verified  
+✔ Dockerized application  
+✔ Deployed to AWS Elastic Beanstalk  
+✔ Version-controlled with GitHub
 
 ```bash
 dotnet new webapp -n basic-dotnet-webapp
