@@ -127,7 +127,82 @@ dotnet publish --configuration Release --output ./publish
 
 The published files will be in the `./publish` directory and can be deployed to any web server that supports ASP.NET Core.
 
-## 🚀 Deployment Options
+## � Docker Support
+
+This application includes Docker support for containerized deployment.
+
+### Docker Files
+- **Dockerfile**: Multi-stage build configuration for production deployment
+- **.dockerignore**: Excludes unnecessary files from Docker build context
+
+### Build Docker Image
+```bash
+docker build -t basic-dotnet-app .
+```
+
+### Run Docker Container
+```bash
+# Run in detached mode
+docker run -d -p 5000:5000 --name my-dotnet-app basic-dotnet-app
+
+# Run with interactive access
+docker run -it -p 5000:5000 basic-dotnet-app
+```
+
+### Docker Features
+- **Multi-stage build**: Optimized image size using SDK for build and runtime for execution
+- **Security**: Runs as non-root user
+- **Performance**: Layer caching for faster builds
+- **Production ready**: Configured for production environment
+
+## 🔄 CI/CD with Azure DevOps
+
+The project includes Azure DevOps pipeline configurations for automated build and deployment.
+
+### Pipeline Files
+- **azure-pipelines.yml**: Main CI/CD pipeline with Docker support
+- **azure-pipelines-deploy.yml**: Azure Web App deployment pipeline
+
+### Main Pipeline Features (`azure-pipelines.yml`)
+- **Multi-stage pipeline**: Separate build and Docker stages
+- **Automated testing**: Runs unit tests with code coverage
+- **Artifact publishing**: Creates deployable artifacts
+- **Docker image creation**: Builds and saves Docker images
+- **Branch triggers**: Runs on `main` and `develop` branches
+
+### Deployment Pipeline Features (`azure-pipelines-deploy.yml`)
+- **Azure Web App deployment**: Direct deployment to Azure
+- **Environment gating**: Only deploys from `main` branch
+- **Service connection**: Uses Azure service connection for secure deployment
+- **Production environment**: Deployment jobs with approval gates
+
+### Setup Instructions
+1. **Import pipeline** in Azure DevOps
+2. **Configure variables** in pipeline settings:
+   - `azureSubscription`: Azure service connection name
+   - `webAppName`: Target Azure Web App name  
+   - `resourceGroupName`: Azure resource group name
+3. **Set up service connection** to your Azure subscription
+4. **Configure branch policies** if needed
+
+### Pipeline Stages
+1. **Build Stage**:
+   - Install .NET 10 SDK
+   - Restore NuGet packages
+   - Build application
+   - Run tests
+   - Publish artifacts
+
+2. **Docker Stage** (main pipeline):
+   - Build Docker image
+   - Tag with build ID and latest
+   - Save image as artifact
+
+3. **Deploy Stage** (deployment pipeline):
+   - Deploy to Azure Web App
+   - Use production environment gates
+
+## �🚀 Deployment Options
 
 - **Azure App Service**: Deploy directly to Azure
 - **Docker**: Containerize the application
