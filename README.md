@@ -1,272 +1,347 @@
-# Basic .NET Web Application
+# 🚀 Basic .NET Web App Setup Guide
 
-A simple ASP.NET Core web application built with .NET 10, demonstrating the basics of Razor Pages web development.
+This repository demonstrates how to **install .NET**, **create a basic ASP.NET Core web application**, and **run it locally** using the .NET CLI.
 
-## 🚀 Features
+---
 
-- **ASP.NET Core Razor Pages**: Server-side rendered web pages
-- **Bootstrap CSS Framework**: Responsive and modern UI components
-- **HTTPS Development Certificate**: Secure local development
-- **Hot Reload**: Automatic refresh during development
-- **Configuration Management**: Environment-specific settings
+## 📌 Prerequisites
 
-## 📋 Prerequisites
+Before you begin, ensure the following:
 
-- [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0) or later
-- A code editor (Visual Studio, Visual Studio Code, or any text editor)
-- Web browser
+* 💻 **Operating System**: Windows (recommended for Chocolatey)
+* 🧰 **Package Manager**: Chocolatey installed
+* 🌐 **Internet Connection**
 
-## 🛠️ Installation & Setup
+---
 
-1. **Clone or download** this repository to your local machine
+## 🔧 Step 1: Install .NET SDK
 
-2. **Navigate** to the project directory:
-   ```bash
-   cd basic-dotnet-app
-   ```
+### Option 1: Install via Chocolatey (Recommended)
 
-3. **Restore dependencies**:
-   ```bash
-   dotnet restore
-   ```
+Open **PowerShell as Administrator** and run:
 
-4. **Trust the development certificate** (first time only):
-   ```bash
-   dotnet dev-certs https --trust
-   ```
+```powershell
+choco install dotnet -y
+```
 
-## ▶️ Running the Application
+### Option 2: Manual Installation
 
-### Development Mode
+Download the latest .NET SDK from the official website:
+
+🔗 [https://dotnet.microsoft.com/en-us/download](https://dotnet.microsoft.com/en-us/download)
+
+---
+
+## ✅ Step 2: Verify .NET Installation
+
+Confirm that .NET is installed correctly:
+
+```bash
+dotnet --version
+```
+
+You should see the installed SDK version displayed.
+
+---
+
+## 🏗️ Step 3: Create a New Web Application
+
+Use the built-in templates to create a basic ASP.NET Core web app:
+
+```bash
+dotnet new webapp -n basic-dotnet-webapp
+```
+
+📁 This command creates a new project folder named **basic-dotnet-webapp**.
+
+---
+
+## 📂 Step 4: Navigate to Project Directory
+
+```bash
+cd basic-dotnet-webapp
+```
+
+---
+
+## 🛠️ Step 5: Build the Application
+
+Compile the project to ensure everything is configured correctly:
+
+```bash
+dotnet build
+```
+
+✔️ This step validates dependencies and project structure.
+
+---
+
+## ▶️ Step 6: Run the Application
+
+Start the development server:
+
 ```bash
 dotnet run
 ```
 
-The application will start and be available at:
-- **HTTPS**: `https://localhost:5001`
-- **HTTP**: `http://localhost:5000`
-
-### Watch Mode (Hot Reload)
-```bash
-dotnet watch run
-```
-
-This enables automatic recompilation and browser refresh when you make changes to the code.
-
-## 🏗️ Project Structure
+Once the app is running, open your browser and visit:
 
 ```
-basic-dotnet-app/
-├── Pages/                          # Razor Pages
-│   ├── Shared/                     # Shared layouts and components
-│   │   ├── _Layout.cshtml         # Main layout template
-│   │   ├── _Layout.cshtml.cs      # Layout code-behind
-│   │   └── _ViewImports.cshtml    # Global using statements
-│   ├── Error.cshtml               # Error page
-│   ├── Error.cshtml.cs           # Error page model
-│   ├── Index.cshtml               # Home page
-│   ├── Index.cshtml.cs           # Home page model
-│   ├── Privacy.cshtml             # Privacy page
-│   └── Privacy.cshtml.cs         # Privacy page model
-├── Properties/
-│   └── launchSettings.json        # Launch configuration
-├── wwwroot/                        # Static files (CSS, JS, images)
-│   ├── css/                       # Stylesheets
-│   ├── js/                        # JavaScript files
-│   └── lib/                       # Third-party libraries
-├── appsettings.json               # Application configuration
-├── appsettings.Development.json   # Development-specific settings
-├── BasicDotNetApp.csproj         # Project file
-├── Program.cs                     # Application entry point
-└── README.md                      # This file
+https://localhost:5001
+or
+http://localhost:5000
 ```
-
-## 🔧 Configuration
-
-### Application Settings
-- **appsettings.json**: Production configuration
-- **appsettings.Development.json**: Development-specific overrides
-
-### Launch Settings
-Configure ports, environment variables, and launch profiles in `Properties/launchSettings.json`.
-
-## 🎨 Customization
-
-### Adding New Pages
-1. Create a new `.cshtml` file in the `Pages` directory
-2. Add a corresponding `.cshtml.cs` file with the page model
-3. Navigation will be automatically available
-
-### Styling
-- Modify `wwwroot/css/site.css` for custom styles
-- Bootstrap 5 is included by default
-- Additional CSS libraries can be added to `wwwroot/lib/`
-
-### Layout Changes
-- Edit `Pages/Shared/_Layout.cshtml` to modify the overall page structure
-- Update navigation in the layout file
-
-## 🧪 Testing
-
-Run the application tests (when available):
-```bash
-dotnet test
-```
-
-## 📦 Building for Production
-
-### Build the application:
-```bash
-dotnet build --configuration Release
-```
-
-### Publish the application:
-```bash
-dotnet publish --configuration Release --output ./publish
-```
-
-The published files will be in the `./publish` directory and can be deployed to any web server that supports ASP.NET Core.
-
-## � Docker Support
-
-This application includes Docker support for containerized deployment.
-
-### Docker Files
-- **Dockerfile**: Multi-stage build configuration for production deployment
-- **.dockerignore**: Excludes unnecessary files from Docker build context
-
-### Build Docker Image
-```bash
-docker build -t basic-dotnet-app .
-```
-
-### Run Docker Container
-```bash
-# Run in detached mode
-docker run -d -p 5000:5000 --name my-dotnet-app basic-dotnet-app
-
-# Run with interactive access
-docker run -it -p 5000:5000 basic-dotnet-app
-```
-
-### Docker Features
-- **Multi-stage build**: Optimized image size using SDK for build and runtime for execution
-- **Security**: Runs as non-root user
-- **Performance**: Layer caching for faster builds
-- **Production ready**: Configured for production environment
-
-## 🔄 CI/CD with Azure DevOps
-
-The project includes Azure DevOps pipeline configurations for automated build and deployment.
-
-### Pipeline Files
-- **azure-pipelines.yml**: Main CI/CD pipeline with Docker support
-- **azure-pipelines-deploy.yml**: Azure Web App deployment pipeline
-
-### Main Pipeline Features (`azure-pipelines.yml`)
-- **Multi-stage pipeline**: Separate build and Docker stages
-- **Automated testing**: Runs unit tests with code coverage
-- **Artifact publishing**: Creates deployable artifacts
-- **Docker image creation**: Builds and saves Docker images
-- **Branch triggers**: Runs on `main` and `develop` branches
-
-### Deployment Pipeline Features (`azure-pipelines-deploy.yml`)
-- **Azure Web App deployment**: Direct deployment to Azure
-- **Environment gating**: Only deploys from `main` branch
-- **Service connection**: Uses Azure service connection for secure deployment
-- **Production environment**: Deployment jobs with approval gates
-
-### Setup Instructions
-1. **Import pipeline** in Azure DevOps
-2. **Configure variables** in pipeline settings:
-   - `azureSubscription`: Azure service connection name
-   - `webAppName`: Target Azure Web App name  
-   - `resourceGroupName`: Azure resource group name
-3. **Set up service connection** to your Azure subscription
-4. **Configure branch policies** if needed
-
-### Pipeline Stages
-1. **Build Stage**:
-   - Install .NET 10 SDK
-   - Restore NuGet packages
-   - Build application
-   - Run tests
-   - Publish artifacts
-
-2. **Docker Stage** (main pipeline):
-   - Build Docker image
-   - Tag with build ID and latest
-   - Save image as artifact
-
-3. **Deploy Stage** (deployment pipeline):
-   - Deploy to Azure Web App
-   - Use production environment gates
-
-## �🚀 Deployment Options
-
-- **Azure App Service**: Deploy directly to Azure
-- **Docker**: Containerize the application
-- **IIS**: Deploy to Internet Information Services
-- **Linux**: Deploy to Linux servers with Kestrel
-- **Self-contained**: Bundle the .NET runtime with the app
-
-## 🔒 Security Features
-
-- **HTTPS Redirection**: Automatically redirects HTTP to HTTPS
-- **Anti-forgery Tokens**: CSRF protection on forms
-- **Secure Headers**: Security-focused HTTP headers
-- **Development Certificate**: Trusted HTTPS during development
-
-## 📚 Learning Resources
-
-- [ASP.NET Core Documentation](https://docs.microsoft.com/aspnet/core/)
-- [Razor Pages Tutorial](https://docs.microsoft.com/aspnet/core/tutorials/razor-pages/)
-- [.NET Documentation](https://docs.microsoft.com/dotnet/)
-- [Bootstrap Documentation](https://getbootstrap.com/docs/)
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Test thoroughly
-5. Submit a pull request
-
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 🆘 Troubleshooting
-
-### Common Issues
-
-**Port already in use:**
-```bash
-# Find and kill the process using the port
-lsof -ti:5000 | xargs kill -9
-```
-
-**Certificate issues:**
-```bash
-# Clear and recreate development certificates
-dotnet dev-certs https --clean
-dotnet dev-certs https --trust
-```
-
-**Restore issues:**
-```bash
-# Clear NuGet cache and restore
-dotnet nuget locals all --clear
-dotnet restore
-```
-
-## 📞 Support
-
-For questions and support:
-- Check the [ASP.NET Core GitHub Issues](https://github.com/dotnet/aspnetcore/issues)
-- Visit [Stack Overflow](https://stackoverflow.com/questions/tagged/asp.net-core)
-- Review the [official documentation](https://docs.microsoft.com/aspnet/core/)
 
 ---
 
-**Happy Coding!** 🎉
+## 📁 Project Structure (Overview)
+
+```text
+basic-dotnet-webapp/
+│
+├── Pages/              # Razor Pages
+├── wwwroot/            # Static files (CSS, JS, images)
+├── Program.cs          # Application entry point
+├── appsettings.json    # Configuration settings
+└── basic-dotnet-webapp.csproj
+```
+
+---
+
+## 🎯 What You Learned
+
+* Installed the .NET SDK
+* Created a web app using .NET templates
+* Built and ran an ASP.NET Core application locally
+
+---
+
+## 📌 Next Steps (Optional)
+
+* Add a **Dockerfile** for containerization
+* Push the project to **GitHub**
+* Deploy to **Azure App Service / AWS Elastic Beanstalk**
+* Integrate **CI/CD pipelines**
+
+---
+
+## 🤝 Author
+
+**Atul Kamble**
+Cloud & DevOps Architect | Trainer
+🔗 GitHub: [https://github.com/atulkamble](https://github.com/atulkamble)
+🔗 LinkedIn: [https://www.linkedin.com/in/atuljkamble/](https://www.linkedin.com/in/atuljkamble/)
+
+---
+
+## 🚀 Basic .NET Web App Deployment using Azure CLI
+
+![Image](https://learn.microsoft.com/en-us/azure/architecture/web-apps/app-service/_images/basic-app-service-architecture-flow.svg?utm_source=chatgpt.com)
+
+![Image](https://miro.medium.com/v2/resize%3Afit%3A1200/1%2ALGnt_avJ0RbzxUxvWWKv4A.png?utm_source=chatgpt.com)
+
+![Image](https://azure.microsoft.com/en-us/blog/wp-content/uploads/2017/09/AppServiceOnLinux.webp?utm_source=chatgpt.com)
+
+![Image](https://k21academy.com/wp-content/uploads/2021/05/Figure-2-Service-Fabric-running-App-Service.png?utm_source=chatgpt.com)
+
+---
+
+## 🔧 Prerequisites
+
+Make sure you have the following installed:
+
+| Tool                   | Purpose                   |
+| ---------------------- | ------------------------- |
+| **.NET SDK (6/7/8)**   | Build & run the web app   |
+| **Azure CLI**          | Deploy resources to Azure |
+| **VS Code** (optional) | Code editing              |
+| **Azure Subscription** | Required for deployment   |
+
+Verify installations:
+
+```bash
+dotnet --version
+az --version
+```
+
+Login to Azure:
+
+```bash
+az login
+```
+
+---
+
+## 📁 Step 1: Create a Basic .NET Web App
+
+Create a new folder and project:
+
+```bash
+mkdir dotnet-webapp
+cd dotnet-webapp
+dotnet new webapp -n MyWebApp
+cd MyWebApp
+```
+
+Run locally to test:
+
+```bash
+dotnet run
+```
+
+Access in browser:
+
+```
+http://localhost:5000
+```
+
+---
+
+## ☁️ Step 2: Create Azure Resources using Azure CLI
+
+### 1️⃣ Set variables (recommended)
+
+```bash
+RESOURCE_GROUP=rg-dotnet-webapp
+LOCATION=eastus
+APP_SERVICE_PLAN=asp-dotnet-webapp
+WEBAPP_NAME=mydotnetwebapp$RANDOM
+```
+
+---
+
+### 2️⃣ Create Resource Group
+
+```bash
+az group create \
+  --name $RESOURCE_GROUP \
+  --location $LOCATION
+```
+
+---
+
+### 3️⃣ Create App Service Plan
+
+```bash
+az appservice plan create \
+  --name $APP_SERVICE_PLAN \
+  --resource-group $RESOURCE_GROUP \
+  --sku B1 \
+  --is-linux
+```
+
+---
+
+### 4️⃣ Create Web App (Linux + .NET)
+
+```bash
+az webapp create \
+  --resource-group $RESOURCE_GROUP \
+  --plan $APP_SERVICE_PLAN \
+  --name $WEBAPP_NAME \
+  --runtime "DOTNET|8.0"
+```
+
+---
+
+## 📦 Step 3: Deploy the .NET App
+
+Publish the app:
+
+```bash
+dotnet publish -c Release
+```
+
+Create a ZIP package:
+
+```bash
+cd bin/Release/net8.0/publish
+zip -r app.zip .
+```
+
+Deploy using Azure CLI:
+
+```bash
+az webapp deploy \
+  --resource-group $RESOURCE_GROUP \
+  --name $WEBAPP_NAME \
+  --src-path app.zip \
+  --type zip
+```
+
+---
+
+## 🌐 Step 4: Access the Application
+
+Open in browser:
+
+```bash
+az webapp browse \
+  --name $WEBAPP_NAME \
+  --resource-group $RESOURCE_GROUP
+```
+
+URL format:
+
+```
+https://<webapp-name>.azurewebsites.net
+```
+
+---
+
+## 📊 Optional: View Logs (Troubleshooting)
+
+Enable logs:
+
+```bash
+az webapp log config \
+  --name $WEBAPP_NAME \
+  --resource-group $RESOURCE_GROUP \
+  --web-server-logging filesystem
+```
+
+Stream logs:
+
+```bash
+az webapp log tail \
+  --name $WEBAPP_NAME \
+  --resource-group $RESOURCE_GROUP
+```
+
+---
+
+## 🧹 Cleanup (Important for Cost Control)
+
+```bash
+az group delete \
+  --name $RESOURCE_GROUP \
+  --yes \
+  --no-wait
+```
+
+---
+
+## 🧠 Architecture Overview
+
+![Image](https://learn.microsoft.com/en-us/azure/architecture/web-apps/app-service/_images/basic-app-service-architecture-flow.svg?utm_source=chatgpt.com)
+
+![Image](https://learn.microsoft.com/en-us/azure/devops/pipelines/architectures/media/azure-pipelines-app-service-variant-architecture.svg?view=azure-devops\&utm_source=chatgpt.com)
+
+![Image](https://learn.microsoft.com/en-us/dotnet/architecture/modern-web-apps-azure/media/image1-5.png?utm_source=chatgpt.com)
+
+**Flow:**
+
+```
+Developer → Azure CLI → App Service → .NET Runtime → Public URL
+```
+
+---
+
+## 📌 Key Takeaways
+
+* Azure App Service is **PaaS** → no VM management
+* Supports **CI/CD** (GitHub Actions, Azure DevOps)
+* Scales easily (manual or auto-scale)
+* Best for **training, demos, and production-ready apps**
+
+---
