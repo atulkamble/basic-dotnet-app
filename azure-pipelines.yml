@@ -1,0 +1,173 @@
+# Azure DevOps Pipeline for Basic Modern Dotnet WebApp
+# This pipeline builds and deploys the .NET 8.0 web application to Azure App Service
+
+trigger:
+  branches:
+    include:
+    - main
+    - develop
+
+variables:
+  # Build Variables
+  buildConfiguration: 'Release'
+  dotNetFramework: 'net8.0'
+  dotNetVersion: '8.0.x'
+  targetRuntime: 'win-x64'
+  
+  # Azure Variables (Configure these in Azure DevOps Variable Groups)
+  azureSubscription: 'Azure-Service-Connection' # Name of your Azure service connection
+  webAppName: 'basic-modern-dotnet-webapp'      # Your Azure Web App name
+  resourceGroupName: 'rg-basic-dotnet-webapp'   # Your Azure Resource Group name
+
+stages:
+- stage: Build
+  displayName: 'Build Stage'
+  jobs:
+  - job: Build
+    displayName: 'Build Job'
+    pool:
+      vmImage: 'windows-latest' # Use Windows agent for .NET applications
+    
+    steps:
+    - task: UseDotNet@2
+      displayName: 'Install .NET SDK'
+      inputs:
+        packageType: 'sdk'
+        version: $(dotNetVersion)
+        includePreviewVersions: false
+    
+    - task: DotNetCoreCLI@2
+      displayName: 'Restore NuGet Packages'
+      inputs:
+        command: 'restore'
+        projects: '**/*.csproj'
+        feedsToUse: 'select'
+    
+    - task: DotNetCoreCLI@2
+      displayName: 'Build Application'
+      inputs:
+        command: 'build'
+        projects: '**/*.csproj'
+        arguments: '--configuration $(buildConfiguration) --no-restore'
+    
+    - task: DotNetCoreCLI@2
+      displayName: 'Run Unit Tests'
+      inputs:
+        command: 'test'
+        projects: '**/*Test*.csproj'
+        arguments: '--configuration $(buildConfiguration) --no-build --verbosity normal --collect:"XPlat Code Coverage" --results-directory $(Agent.TempDirectory)'
+      continueOnError: true # Continue even if tests fail
+    
+    - task: PublishCodeCoverageResults@1
+      displayName: 'Publish Code Coverage'
+      inputs:
+        codeCoverageTool: 'Cobertura'
+        summaryFileLocation: '$(Agent.TempDirectory)/**/coverage.cobertura.xml'
+      condition: succeededOrFailed()
+    
+    - task: DotNetCoreCLI@2
+      displayName: 'Publish Application'
+      inputs:
+        command: 'publish'
+        publishWebProjects: true
+        arguments: '--configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory) --no-restore --no-build --runtime $(targetRuntime) --self-contained false'
+        zipAfterPublish: true
+        modifyOutputPath: false
+    
+    - task: PublishBuildArtifacts@1
+      displayName: 'Publish Build Artifacts'
+      inputs:
+        PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+        ArtifactName: 'webapp-artifacts'
+        publishLocation: 'Container'
+
+- stage: Deploy_Development
+  displayName: 'Deploy to Development'
+  dependsOn: Build
+  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/develop'))
+  jobs:
+  - deployment: Deploy_Dev
+    displayName: 'Deploy to Dev Environment'
+    pool:
+      vmImage: 'windows-latest'
+    environment: 'Development'
+    variables:
+      webAppName: '$(webAppName)-dev'
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - task: AzureWebApp@1
+            displayName: 'Deploy to Azure Web App (Dev)'
+            inputs:
+              azureSubscription: $(azureSubscription)
+              appType: 'webApp'
+              appName: $(webAppName)
+              resourceGroupName: $(resourceGroupName)
+              package: '$(Pipeline.Workspace)/webapp-artifacts/**/*.zip'
+              deploymentMethod: 'auto'
+              appSettings: |
+                -ASPNETCORE_ENVIRONMENT Development
+                -ASPNETCORE_HTTP_PORTS 80
+
+- stage: Deploy_Production
+  displayName: 'Deploy to Production'
+  dependsOn: Build
+  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+  jobs:
+  - deployment: Deploy_Prod
+    displayName: 'Deploy to Production Environment'
+    pool:
+      vmImage: 'windows-latest'
+    environment: 'Production'
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - task: AzureWebApp@1
+            displayName: 'Deploy to Azure Web App (Production)'
+            inputs:
+              azureSubscription: $(azureSubscription)
+              appType: 'webApp'
+              appName: $(webAppName)
+              resourceGroupName: $(resourceGroupName)
+              package: '$(Pipeline.Workspace)/webapp-artifacts/**/*.zip'
+              deploymentMethod: 'auto'
+              appSettings: |
+                -ASPNETCORE_ENVIRONMENT Production
+                -ASPNETCORE_HTTP_PORTS 80
+                -ASPNETCORE_HTTPS_PORT 443
+
+# Health Check Stage (Optional)
+- stage: HealthCheck
+  displayName: 'Health Check'
+  dependsOn: 
+  - Deploy_Development
+  - Deploy_Production
+  condition: succeededOrFailed()
+  jobs:
+  - job: HealthCheck
+    displayName: 'Verify Deployment'
+    pool:
+      vmImage: 'ubuntu-latest'
+    steps:
+    - task: PowerShell@2
+      displayName: 'Health Check - Production'
+      inputs:
+        targetType: 'inline'
+        script: |
+          $url = "https://$(webAppName).azurewebsites.net"
+          Write-Host "Checking health of: $url"
+          
+          try {
+            $response = Invoke-WebRequest -Uri $url -TimeoutSec 30
+            if ($response.StatusCode -eq 200) {
+              Write-Host "✅ Health check passed! Status: $($response.StatusCode)"
+            } else {
+              Write-Warning "⚠️ Unexpected status code: $($response.StatusCode)"
+            }
+          } catch {
+            Write-Error "❌ Health check failed: $($_.Exception.Message)"
+            exit 1
+          }
+      condition: and(succeededOrFailed(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
