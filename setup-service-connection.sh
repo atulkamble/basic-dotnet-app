@@ -50,24 +50,51 @@ echo "  Subscription ID: $SUBSCRIPTION_ID"
 echo "  Tenant ID: $TENANT_ID"
 echo ""
 
+# Check if resource group exists, create if not
+print_status "Checking resource group: $RESOURCE_GROUP_NAME"
+if az group show --name "$RESOURCE_GROUP_NAME" &> /dev/null; then
+    print_success "Resource group '$RESOURCE_GROUP_NAME' already exists"
+else
+    print_status "Creating resource group: $RESOURCE_GROUP_NAME"
+    if az group create --name "$RESOURCE_GROUP_NAME" --location "East US" --output table; then
+        print_success "Resource group created successfully!"
+    else
+        print_error "Failed to create resource group"
+        print_status "Attempting to use subscription-level service principal instead..."
+        RESOURCE_GROUP_NAME=""
+    fi
+fi
+
+echo ""
+
 # Create service principal
 print_status "Creating service principal for Azure DevOps..."
 
 SP_NAME="sp-basic-dotnet-webapp-$(date +%Y%m%d%H%M%S)"
 
+# Determine scope based on resource group availability
+if [ -n "$RESOURCE_GROUP_NAME" ]; then
+    SCOPE="/subscriptions/$SUBSCRIPTION_ID/resourceGroups/$RESOURCE_GROUP_NAME"
+    print_status "Using resource group scope: $RESOURCE_GROUP_NAME"
+else
+    SCOPE="/subscriptions/$SUBSCRIPTION_ID"
+    print_status "Using subscription scope (fallback)"
+fi
+
 # Create service principal and capture output
+print_status "Creating service principal with scope: $SCOPE"
 SP_OUTPUT=$(az ad sp create-for-rbac \
     --name "$SP_NAME" \
     --role "Contributor" \
-    --scopes "/subscriptions/$SUBSCRIPTION_ID/resourceGroups/$RESOURCE_GROUP_NAME" \
-    --sdk-auth)
+    --scopes "$SCOPE" \
+    --output json 2>/dev/null)
 
-if [ $? -eq 0 ]; then
+if [ $? -eq 0 ] && [ -n "$SP_OUTPUT" ]; then
     print_success "Service principal created successfully!"
     
-    # Parse the JSON output
-    APP_ID=$(echo "$SP_OUTPUT" | jq -r '.clientId')
-    CLIENT_SECRET=$(echo "$SP_OUTPUT" | jq -r '.clientSecret')
+    # Parse the JSON output (new format without --sdk-auth)
+    APP_ID=$(echo "$SP_OUTPUT" | jq -r '.appId')
+    CLIENT_SECRET=$(echo "$SP_OUTPUT" | jq -r '.password')
     
     echo ""
     print_success "Service Connection Details:"
@@ -78,6 +105,11 @@ if [ $? -eq 0 ]; then
     echo "Subscription ID: $SUBSCRIPTION_ID"
     echo "Subscription Name: $SUBSCRIPTION_NAME"
     echo "Tenant ID: $TENANT_ID"
+    if [ -n "$RESOURCE_GROUP_NAME" ]; then
+        echo "Resource Group: $RESOURCE_GROUP_NAME"
+    else
+        echo "Scope: Subscription level"
+    fi
     echo ""
     
     print_warning "⚠️  IMPORTANT: Save this client secret - it won't be shown again!"
@@ -114,7 +146,7 @@ Subscription ID: $SUBSCRIPTION_ID
 Subscription Name: $SUBSCRIPTION_NAME
 Tenant ID: $TENANT_ID
 
-Resource Group: $RESOURCE_GROUP_NAME
+$(if [ -n "$RESOURCE_GROUP_NAME" ]; then echo "Resource Group: $RESOURCE_GROUP_NAME"; else echo "Scope: Subscription level"; fi)
 Service Principal Name: $SP_NAME
 
 Setup Instructions:
