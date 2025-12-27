@@ -97,6 +97,7 @@
 /Users/atul/Downloads/dotnetproject/basic-dotnet-webapp/obj/Debug/net10.0/ref/basic-dotnet-webapp.dll
 /Users/atul/Downloads/basic-dotnet-app/bin/Debug/net10.0/appsettings.Development.json
 /Users/atul/Downloads/basic-dotnet-app/bin/Debug/net10.0/appsettings.json
+/Users/atul/Downloads/basic-dotnet-app/bin/Debug/net10.0/azure-infrastructure.json
 /Users/atul/Downloads/basic-dotnet-app/bin/Debug/net10.0/basic-dotnet-webapp.staticwebassets.runtime.json
 /Users/atul/Downloads/basic-dotnet-app/bin/Debug/net10.0/basic-dotnet-webapp.staticwebassets.endpoints.json
 /Users/atul/Downloads/basic-dotnet-app/bin/Debug/net10.0/basic-dotnet-webapp
@@ -119,7 +120,9 @@
 /Users/atul/Downloads/basic-dotnet-app/obj/Debug/net10.0/scopedcss/Pages/Shared/_Layout.cshtml.rz.scp.css
 /Users/atul/Downloads/basic-dotnet-app/obj/Debug/net10.0/scopedcss/bundle/basic-dotnet-webapp.styles.css
 /Users/atul/Downloads/basic-dotnet-app/obj/Debug/net10.0/scopedcss/projectbundle/basic-dotnet-webapp.bundle.scp.css
+/Users/atul/Downloads/basic-dotnet-app/obj/Debug/net10.0/compressed/agi7fc9nmx-{0}-7d6gz5gjot-7d6gz5gjot.gz
 /Users/atul/Downloads/basic-dotnet-app/obj/Debug/net10.0/compressed/uefcui3f9u-{0}-61n19gt1b8-61n19gt1b8.gz
+/Users/atul/Downloads/basic-dotnet-app/obj/Debug/net10.0/compressed/iylla5225c-{0}-fk9n2sqdx0-fk9n2sqdx0.gz
 /Users/atul/Downloads/basic-dotnet-app/obj/Debug/net10.0/compressed/x2mhq0l7xw-{0}-bqjiyaj88i-bqjiyaj88i.gz
 /Users/atul/Downloads/basic-dotnet-app/obj/Debug/net10.0/compressed/kk4erjod03-{0}-c2jlpeoesf-c2jlpeoesf.gz
 /Users/atul/Downloads/basic-dotnet-app/obj/Debug/net10.0/compressed/jp8h6wddzv-{0}-erw9l3u2r3-erw9l3u2r3.gz
@@ -191,5 +194,3 @@
 /Users/atul/Downloads/basic-dotnet-app/obj/Debug/net10.0/basic-dotnet-webapp.pdb
 /Users/atul/Downloads/basic-dotnet-app/obj/Debug/net10.0/basic-dotnet-webapp.genruntimeconfig.cache
 /Users/atul/Downloads/basic-dotnet-app/obj/Debug/net10.0/ref/basic-dotnet-webapp.dll
-/Users/atul/Downloads/basic-dotnet-app/obj/Debug/net10.0/compressed/agi7fc9nmx-{0}-7d6gz5gjot-7d6gz5gjot.gz
-/Users/atul/Downloads/basic-dotnet-app/obj/Debug/net10.0/compressed/iylla5225c-{0}-fk9n2sqdx0-fk9n2sqdx0.gz

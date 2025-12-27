@@ -19,7 +19,7 @@ parameters:
 
 variables:
   buildConfiguration: 'Release'
-  dotNetVersion: '8.0.x'
+  dotNetVersion: '10.0.x'
 
 stages:
 - stage: Build

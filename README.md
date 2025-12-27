@@ -121,9 +121,9 @@ dotnet run
 Create a Dockerfile in the project root:
 
 ```dockerfile
-FROM mcr.microsoft.com/dotnet/aspnet:8.0
+FROM mcr.microsoft.com/dotnet/aspnet:10.0
 WORKDIR /app
-COPY bin/Release/net8.0/publish/ .
+COPY bin/Release/net10.0/publish/ .
 ENTRYPOINT ["dotnet", "BasicDotNetApp.dll"]
 ```
 
@@ -382,7 +382,7 @@ az webapp create \
   --resource-group $RESOURCE_GROUP \
   --plan $APP_SERVICE_PLAN \
   --name $WEBAPP_NAME \
-  --runtime "DOTNET|8.0"
+  --runtime "DOTNET|10.0"
 ```
 
 ---
@@ -398,7 +398,7 @@ dotnet publish -c Release
 Create a ZIP package:
 
 ```bash
-cd bin/Release/net8.0/publish
+cd bin/Release/net10.0/publish
 zip -r app.zip .
 ```
 

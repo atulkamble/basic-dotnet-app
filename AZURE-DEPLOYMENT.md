@@ -82,7 +82,7 @@ Create environments in Azure DevOps for deployment approvals:
 - **Health Check**: Verify deployment success
 
 ### Build Process
-1. Install .NET 8.0 SDK
+1. Install .NET 10.0 SDK
 2. Restore NuGet packages
 3. Build application
 4. Run unit tests (if available)
