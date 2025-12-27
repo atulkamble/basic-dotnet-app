@@ -29,11 +29,6 @@ variables:
   buildConfiguration: 'Release'
   dotNetVersion: '8.0.x'
   targetRuntime: 'win-x64'
-  # Set deployment variables based on parameters
-  deploymentEnabled: ${{ parameters.enableDeployment }}
-  serviceConnection: ${{ parameters.azureServiceConnection }}
-  appName: ${{ parameters.webAppName }}
-  resourceGroup: ${{ parameters.resourceGroupName }}
 
 stages:
 - stage: Build
@@ -51,14 +46,14 @@ stages:
         targetType: 'inline'
         script: |
           Write-Host "=== Pipeline Configuration ===" -ForegroundColor Green
-          Write-Host "Deployment Enabled: $(deploymentEnabled)"
-          Write-Host "Service Connection: $(serviceConnection)" 
-          Write-Host "Web App Name: $(appName)"
-          Write-Host "Resource Group: $(resourceGroup)"
+          Write-Host "Deployment Enabled: ${{ parameters.enableDeployment }}"
+          Write-Host "Service Connection: ${{ parameters.azureServiceConnection }}" 
+          Write-Host "Web App Name: ${{ parameters.webAppName }}"
+          Write-Host "Resource Group: ${{ parameters.resourceGroupName }}"
           Write-Host "Branch: $(Build.SourceBranch)"
           Write-Host ""
           
-          if ("$(deploymentEnabled)" -eq "False") {
+          if ("${{ parameters.enableDeployment }}" -eq "False") {
             Write-Host "ℹ️  Build-only mode enabled" -ForegroundColor Yellow
             Write-Host "   Deployment stages will be skipped" -ForegroundColor Yellow
           } else {
@@ -106,10 +101,12 @@ stages:
         PathtoPublish: '$(Build.ArtifactStagingDirectory)'
         ArtifactName: 'webapp-package'
 
+# Only include deployment stages when enableDeployment is true
+${{ if eq(parameters.enableDeployment, true) }}:
 - stage: DeployDev
   displayName: 'Deploy to Development'
   dependsOn: Build
-  condition: and(succeeded(), eq(variables.deploymentEnabled, true), eq(variables['Build.SourceBranch'], 'refs/heads/develop'))
+  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/develop'))
   jobs:
   - deployment: DeployToDev
     displayName: 'Deploy to Dev Environment'
@@ -123,16 +120,16 @@ stages:
           - task: AzureWebApp@1
             displayName: 'Deploy to Azure Web App'
             inputs:
-              azureSubscription: '$(serviceConnection)'
+              azureSubscription: '${{ parameters.azureServiceConnection }}'
               appType: 'webApp'
-              appName: '$(appName)-dev'
-              resourceGroupName: '$(resourceGroup)'
+              appName: '${{ parameters.webAppName }}-dev'
+              resourceGroupName: '${{ parameters.resourceGroupName }}'
               package: '$(Pipeline.Workspace)/webapp-package/*.zip'
 
 - stage: DeployProd
   displayName: 'Deploy to Production'
   dependsOn: Build
-  condition: and(succeeded(), eq(variables.deploymentEnabled, true), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
   jobs:
   - deployment: DeployToProduction
     displayName: 'Deploy to Production Environment'
@@ -146,18 +143,15 @@ stages:
           - task: AzureWebApp@1
             displayName: 'Deploy to Azure Web App'
             inputs:
-              azureSubscription: '$(serviceConnection)'
+              azureSubscription: '${{ parameters.azureServiceConnection }}'
               appType: 'webApp'
-              appName: '$(appName)'
-              resourceGroupName: '$(resourceGroup)'
+              appName: '${{ parameters.webAppName }}'
+              resourceGroupName: '${{ parameters.resourceGroupName }}'
               package: '$(Pipeline.Workspace)/webapp-package/*.zip'
 
 - stage: Summary
   displayName: 'Pipeline Summary'
-  dependsOn: 
-  - Build
-  - DeployDev
-  - DeployProd
+  dependsOn: Build
   condition: always()
   jobs:
   - job: ShowSummary
@@ -172,13 +166,13 @@ stages:
         script: |
           Write-Host "=== Pipeline Summary ===" -ForegroundColor Green
           Write-Host "Branch: $(Build.SourceBranch)"
-          Write-Host "Deployment Mode: $(deploymentEnabled)"
+          Write-Host "Deployment Mode: ${{ parameters.enableDeployment }}"
           
-          if ("$(deploymentEnabled)" -eq "False") {
+          if ("${{ parameters.enableDeployment }}" -eq "False") {
             Write-Host ""
             Write-Host "✅ Build completed successfully!" -ForegroundColor Green  
             Write-Host "📋 To enable deployments:" -ForegroundColor Cyan
-            Write-Host "   1. Set up service connection: $(serviceConnection)"
+            Write-Host "   1. Set up service connection: ${{ parameters.azureServiceConnection }}"
             Write-Host "   2. Run pipeline with enableDeployment = true"
             Write-Host "   3. Use setup script: ./setup-service-connection.sh"
           } else {
