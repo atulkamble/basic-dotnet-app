@@ -1,0 +1,87 @@
+# Azure DevOps Deployment Pipeline for Basic Modern Dotnet WebApp
+# This pipeline includes deployment stages - use only after service connection is set up
+
+trigger: none  # Manual trigger only
+
+parameters:
+- name: azureServiceConnection
+  displayName: 'Azure Service Connection Name'
+  type: string
+  default: 'Azure-BasicDotnetApp-Connection'
+- name: webAppName
+  displayName: 'Azure Web App Name'
+  type: string
+  default: 'basic-modern-dotnet-webapp'
+- name: resourceGroupName
+  displayName: 'Azure Resource Group Name'
+  type: string
+  default: 'rg-basic-dotnet-webapp'
+
+variables:
+  buildConfiguration: 'Release'
+  dotNetVersion: '8.0.x'
+
+stages:
+- stage: Build
+  displayName: 'Build Application'
+  jobs:
+  - job: BuildJob
+    displayName: 'Build .NET Application'
+    pool:
+      vmImage: 'windows-latest'
+    
+    steps:
+    - task: UseDotNet@2
+      displayName: 'Install .NET SDK'
+      inputs:
+        packageType: 'sdk'
+        version: $(dotNetVersion)
+    
+    - task: DotNetCoreCLI@2
+      displayName: 'Restore Dependencies'
+      inputs:
+        command: 'restore'
+        projects: '**/*.csproj'
+    
+    - task: DotNetCoreCLI@2
+      displayName: 'Build Application'
+      inputs:
+        command: 'build'
+        projects: '**/*.csproj'
+        arguments: '--configuration $(buildConfiguration) --no-restore'
+    
+    - task: DotNetCoreCLI@2
+      displayName: 'Publish Application'
+      inputs:
+        command: 'publish'
+        publishWebProjects: true
+        arguments: '--configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory)'
+        zipAfterPublish: true
+    
+    - task: PublishBuildArtifacts@1
+      displayName: 'Upload Artifacts'
+      inputs:
+        PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+        ArtifactName: 'webapp-package'
+
+- stage: Deploy
+  displayName: 'Deploy to Azure'
+  dependsOn: Build
+  jobs:
+  - deployment: DeployToAzure
+    displayName: 'Deploy to Azure Web App'
+    pool:
+      vmImage: 'windows-latest'
+    environment: 'Production'
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - task: AzureWebApp@1
+            displayName: 'Deploy to Azure Web App'
+            inputs:
+              azureSubscription: '${{ parameters.azureServiceConnection }}'
+              appType: 'webApp'
+              appName: '${{ parameters.webAppName }}'
+              resourceGroupName: '${{ parameters.resourceGroupName }}'
+              package: '$(Pipeline.Workspace)/webapp-package/*.zip'

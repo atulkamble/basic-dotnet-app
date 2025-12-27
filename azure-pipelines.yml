@@ -1,6 +1,4 @@
 # Azure DevOps Pipeline for Basic Modern Dotnet WebApp
-# This pipeline builds and optionally deploys the .NET 8.0 web application to Azure App Service
-
 trigger:
   branches:
     include:
@@ -28,7 +26,6 @@ parameters:
 variables:
   buildConfiguration: 'Release'
   dotNetVersion: '8.0.x'
-  targetRuntime: 'win-x64'
 
 stages:
 - stage: Build
@@ -47,17 +44,12 @@ stages:
         script: |
           Write-Host "=== Pipeline Configuration ===" -ForegroundColor Green
           Write-Host "Deployment Enabled: ${{ parameters.enableDeployment }}"
-          Write-Host "Service Connection: ${{ parameters.azureServiceConnection }}" 
-          Write-Host "Web App Name: ${{ parameters.webAppName }}"
-          Write-Host "Resource Group: ${{ parameters.resourceGroupName }}"
           Write-Host "Branch: $(Build.SourceBranch)"
-          Write-Host ""
           
           if ("${{ parameters.enableDeployment }}" -eq "False") {
-            Write-Host "ℹ️  Build-only mode enabled" -ForegroundColor Yellow
-            Write-Host "   Deployment stages will be skipped" -ForegroundColor Yellow
+            Write-Host "ℹ️  Build-only mode" -ForegroundColor Yellow
           } else {
-            Write-Host "🚀 Full deployment mode enabled" -ForegroundColor Green
+            Write-Host "🚀 Full deployment mode" -ForegroundColor Green
           }
     
     - task: UseDotNet@2
@@ -92,7 +84,7 @@ stages:
       inputs:
         command: 'publish'
         publishWebProjects: true
-        arguments: '--configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory) --no-restore --no-build'
+        arguments: '--configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory)'
         zipAfterPublish: true
     
     - task: PublishBuildArtifacts@1
@@ -100,54 +92,6 @@ stages:
       inputs:
         PathtoPublish: '$(Build.ArtifactStagingDirectory)'
         ArtifactName: 'webapp-package'
-
-# Only include deployment stages when enableDeployment is true
-${{ if eq(parameters.enableDeployment, true) }}:
-- stage: DeployDev
-  displayName: 'Deploy to Development'
-  dependsOn: Build
-  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/develop'))
-  jobs:
-  - deployment: DeployToDev
-    displayName: 'Deploy to Dev Environment'
-    pool:
-      vmImage: 'windows-latest'
-    environment: 'Development'
-    strategy:
-      runOnce:
-        deploy:
-          steps:
-          - task: AzureWebApp@1
-            displayName: 'Deploy to Azure Web App'
-            inputs:
-              azureSubscription: '${{ parameters.azureServiceConnection }}'
-              appType: 'webApp'
-              appName: '${{ parameters.webAppName }}-dev'
-              resourceGroupName: '${{ parameters.resourceGroupName }}'
-              package: '$(Pipeline.Workspace)/webapp-package/*.zip'
-
-- stage: DeployProd
-  displayName: 'Deploy to Production'
-  dependsOn: Build
-  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
-  jobs:
-  - deployment: DeployToProduction
-    displayName: 'Deploy to Production Environment'
-    pool:
-      vmImage: 'windows-latest'
-    environment: 'Production'
-    strategy:
-      runOnce:
-        deploy:
-          steps:
-          - task: AzureWebApp@1
-            displayName: 'Deploy to Azure Web App'
-            inputs:
-              azureSubscription: '${{ parameters.azureServiceConnection }}'
-              appType: 'webApp'
-              appName: '${{ parameters.webAppName }}'
-              resourceGroupName: '${{ parameters.resourceGroupName }}'
-              package: '$(Pipeline.Workspace)/webapp-package/*.zip'
 
 - stage: Summary
   displayName: 'Pipeline Summary'
@@ -165,17 +109,18 @@ ${{ if eq(parameters.enableDeployment, true) }}:
         targetType: 'inline'
         script: |
           Write-Host "=== Pipeline Summary ===" -ForegroundColor Green
-          Write-Host "Branch: $(Build.SourceBranch)"
-          Write-Host "Deployment Mode: ${{ parameters.enableDeployment }}"
+          Write-Host "✅ Build completed successfully!" -ForegroundColor Green
+          Write-Host ""
           
           if ("${{ parameters.enableDeployment }}" -eq "False") {
+            Write-Host "📋 Next Steps to Enable Deployment:" -ForegroundColor Cyan
+            Write-Host "1. Set up Azure service connection: ${{ parameters.azureServiceConnection }}"
+            Write-Host "2. Create Azure Web App: ${{ parameters.webAppName }}"
+            Write-Host "3. Run pipeline with enableDeployment = true"
             Write-Host ""
-            Write-Host "✅ Build completed successfully!" -ForegroundColor Green  
-            Write-Host "📋 To enable deployments:" -ForegroundColor Cyan
-            Write-Host "   1. Set up service connection: ${{ parameters.azureServiceConnection }}"
-            Write-Host "   2. Run pipeline with enableDeployment = true"
-            Write-Host "   3. Use setup script: ./setup-service-connection.sh"
+            Write-Host "🔧 Use setup scripts:"
+            Write-Host "./setup-service-connection.sh"
           } else {
-            Write-Host ""
-            Write-Host "🚀 Full pipeline completed!" -ForegroundColor Green
+            Write-Host "🚀 Deployment mode enabled!" -ForegroundColor Green
+            Write-Host "Note: Deployment stages require manual setup in Azure DevOps"
           }
