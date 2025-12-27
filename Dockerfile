@@ -1,21 +1,14 @@
-FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS base
+# Build and run ASP.NET Core app
+FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /app
-EXPOSE 8080
+COPY *.csproj ./
+RUN dotnet restore
+COPY . ./
+RUN dotnet publish -c Release -o out
 
-FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
-ARG BUILD_CONFIGURATION=Release
-WORKDIR /src
-COPY ["basic-dotnet-webapp.csproj", "."]
-RUN dotnet restore "./basic-dotnet-webapp.csproj"
-COPY . .
-WORKDIR "/src/."
-RUN dotnet build "./basic-dotnet-webapp.csproj" -c $BUILD_CONFIGURATION -o /app/build
-
-FROM build AS publish
-ARG BUILD_CONFIGURATION=Release
-RUN dotnet publish "./basic-dotnet-webapp.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
-
-FROM base AS final
+FROM mcr.microsoft.com/dotnet/aspnet:8.0
 WORKDIR /app
-COPY --from=publish /app/publish .
+COPY --from=build /app/out .
+ENV ASPNETCORE_HTTP_PORTS=5000
+EXPOSE 5000
 ENTRYPOINT ["dotnet", "basic-dotnet-webapp.dll"]
