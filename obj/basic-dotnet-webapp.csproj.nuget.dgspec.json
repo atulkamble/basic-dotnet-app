@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "/Users/atul/Downloads/dotnetproject/basic-dotnet-webapp/basic-dotnet-webapp.csproj": {}
+    "/Users/atul/Downloads/basic-dotnet-app/basic-dotnet-webapp.csproj": {}
   },
   "projects": {
-    "/Users/atul/Downloads/dotnetproject/basic-dotnet-webapp/basic-dotnet-webapp.csproj": {
+    "/Users/atul/Downloads/basic-dotnet-app/basic-dotnet-webapp.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "/Users/atul/Downloads/dotnetproject/basic-dotnet-webapp/basic-dotnet-webapp.csproj",
+        "projectUniqueName": "/Users/atul/Downloads/basic-dotnet-app/basic-dotnet-webapp.csproj",
         "projectName": "basic-dotnet-webapp",
-        "projectPath": "/Users/atul/Downloads/dotnetproject/basic-dotnet-webapp/basic-dotnet-webapp.csproj",
+        "projectPath": "/Users/atul/Downloads/basic-dotnet-app/basic-dotnet-webapp.csproj",
         "packagesPath": "/Users/atul/.nuget/packages/",
-        "outputPath": "/Users/atul/Downloads/dotnetproject/basic-dotnet-webapp/obj/",
+        "outputPath": "/Users/atul/Downloads/basic-dotnet-app/obj/",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "/Users/atul/.nuget/NuGet/NuGet.Config"
