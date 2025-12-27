@@ -14,16 +14,14 @@ variables:
   dotNetVersion: '8.0.x'
   targetRuntime: 'win-x64'
   
-  # Azure Variables - UPDATE THESE BEFORE RUNNING PIPELINE
-  # TODO: Create service connection in Azure DevOps and update the name below
-  azureSubscription: 'YOUR_AZURE_SERVICE_CONNECTION_NAME' # Replace with your actual service connection name
-  webAppName: 'basic-modern-dotnet-webapp'                # Your Azure Web App name
-  resourceGroupName: 'rg-basic-dotnet-webapp'             # Your Azure Resource Group name
+  # Azure Variables - CONFIGURE BEFORE DEPLOYMENT
+  # Set these variables in Azure DevOps or update them here
+  azureSubscription: 'Azure-BasicDotnetApp-Connection'  # Create this service connection first
+  webAppName: 'basic-modern-dotnet-webapp'             # Your Azure Web App name
+  resourceGroupName: 'rg-basic-dotnet-webapp'          # Your Azure Resource Group name
   
-  # Alternative: Use variable groups instead of hardcoded values
-  # azureSubscription: $[variables.AZURE_SERVICE_CONNECTION]
-  # webAppName: $[variables.AZURE_WEBAPP_NAME]
-  # resourceGroupName: $[variables.AZURE_RESOURCE_GROUP]
+  # Pipeline control variables
+  deploymentEnabled: ${{ ne(variables['azureSubscription'], 'Azure-BasicDotnetApp-Connection') }}
 
 stages:
 - stage: Validate
@@ -45,16 +43,21 @@ stages:
           Write-Host "Resource Group: $(resourceGroupName)"
           Write-Host ""
           
-          if ("$(azureSubscription)" -eq "YOUR_AZURE_SERVICE_CONNECTION_NAME") {
-            Write-Error "❌ SETUP REQUIRED: Please update the 'azureSubscription' variable with your actual Azure service connection name"
-            Write-Host "📋 Setup Instructions:"
-            Write-Host "1. Go to Project Settings > Service connections in Azure DevOps"
-            Write-Host "2. Create new 'Azure Resource Manager' service connection"
-            Write-Host "3. Update the 'azureSubscription' variable in this pipeline"
-            exit 1
+          # Check if default service connection name is being used
+          if ("$(azureSubscription)" -eq "Azure-BasicDotnetApp-Connection") {
+            Write-Host "⚠️  Using default service connection name."
+            Write-Host "📋 To enable deployments:"
+            Write-Host "   1. Run: ./setup-service-connection.sh"
+            Write-Host "   2. Create the service connection in Azure DevOps"
+            Write-Host "   3. Verify the connection name matches: $(azureSubscription)"
+            Write-Host "   4. Or update the azureSubscription variable with your connection name"
+            Write-Host ""
+            Write-Host "ℹ️  Build will continue, but deployments will be skipped."
+          } else {
+            Write-Host "✅ Using custom service connection: $(azureSubscription)"
           }
           
-          Write-Host "✅ Configuration looks good!"
+          Write-Host "✅ Configuration validated!"
 
 - stage: Build
   displayName: 'Build Stage'
@@ -120,7 +123,12 @@ stages:
 - stage: Deploy_Development
   displayName: 'Deploy to Development'
   dependsOn: Build
-  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/develop'))
+  condition: |
+    and(
+      succeeded(),
+      eq(variables['Build.SourceBranch'], 'refs/heads/develop'),
+      ne(variables['azureSubscription'], 'Azure-BasicDotnetApp-Connection')
+    )
   jobs:
   - deployment: Deploy_Dev
     displayName: 'Deploy to Dev Environment'
@@ -149,7 +157,12 @@ stages:
 - stage: Deploy_Production
   displayName: 'Deploy to Production'
   dependsOn: Build
-  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+  condition: |
+    and(
+      succeeded(),
+      eq(variables['Build.SourceBranch'], 'refs/heads/main'),
+      ne(variables['azureSubscription'], 'Azure-BasicDotnetApp-Connection')
+    )
   jobs:
   - deployment: Deploy_Prod
     displayName: 'Deploy to Production Environment'
@@ -174,13 +187,48 @@ stages:
                 -ASPNETCORE_HTTP_PORTS 80
                 -ASPNETCORE_HTTPS_PORT 443
 
+# Deployment Summary Stage
+- stage: DeploymentSummary
+  displayName: 'Deployment Summary'
+  dependsOn: 
+  - Build
+  - Deploy_Development
+  - Deploy_Production
+  condition: always()
+  jobs:
+  - job: Summary
+    displayName: 'Show Deployment Status'
+    pool:
+      vmImage: 'ubuntu-latest'
+    steps:
+    - task: PowerShell@2
+      displayName: 'Deployment Summary'
+      inputs:
+        targetType: 'inline'
+        script: |
+          Write-Host "=== Deployment Summary ==="
+          Write-Host "Branch: $(Build.SourceBranch)"
+          Write-Host "Service Connection: $(azureSubscription)"
+          
+          if ("$(azureSubscription)" -eq "Azure-BasicDotnetApp-Connection") {
+            Write-Host "📋 Setup Required:"
+            Write-Host "   Deployments were skipped because service connection is not configured."
+            Write-Host "   Run './setup-service-connection.sh' to create the required service connection."
+          } else {
+            Write-Host "✅ Using configured service connection for deployments."
+          }
+
 # Health Check Stage (Optional)
 - stage: HealthCheck
   displayName: 'Health Check'
   dependsOn: 
   - Deploy_Development
   - Deploy_Production
-  condition: succeededOrFailed()
+  condition: |
+    and(
+      or(succeeded('Deploy_Development'), succeeded('Deploy_Production')),
+      ne(variables['azureSubscription'], 'Azure-BasicDotnetApp-Connection')
+    )
   jobs:
   - job: HealthCheck
     displayName: 'Verify Deployment'
@@ -206,4 +254,4 @@ stages:
             Write-Error "❌ Health check failed: $($_.Exception.Message)"
             exit 1
           }
-      condition: and(succeededOrFailed(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+      condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
