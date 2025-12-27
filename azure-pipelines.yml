@@ -14,12 +14,48 @@ variables:
   dotNetVersion: '8.0.x'
   targetRuntime: 'win-x64'
   
-  # Azure Variables (Configure these in Azure DevOps Variable Groups)
-  azureSubscription: 'Azure-Service-Connection' # Name of your Azure service connection
-  webAppName: 'basic-modern-dotnet-webapp'      # Your Azure Web App name
-  resourceGroupName: 'rg-basic-dotnet-webapp'   # Your Azure Resource Group name
+  # Azure Variables - UPDATE THESE BEFORE RUNNING PIPELINE
+  # TODO: Create service connection in Azure DevOps and update the name below
+  azureSubscription: 'YOUR_AZURE_SERVICE_CONNECTION_NAME' # Replace with your actual service connection name
+  webAppName: 'basic-modern-dotnet-webapp'                # Your Azure Web App name
+  resourceGroupName: 'rg-basic-dotnet-webapp'             # Your Azure Resource Group name
+  
+  # Alternative: Use variable groups instead of hardcoded values
+  # azureSubscription: $[variables.AZURE_SERVICE_CONNECTION]
+  # webAppName: $[variables.AZURE_WEBAPP_NAME]
+  # resourceGroupName: $[variables.AZURE_RESOURCE_GROUP]
 
 stages:
+- stage: Validate
+  displayName: 'Validate Prerequisites'
+  jobs:
+  - job: ValidateSetup
+    displayName: 'Validate Pipeline Setup'
+    pool:
+      vmImage: 'ubuntu-latest'
+    steps:
+    - task: PowerShell@2
+      displayName: 'Check Pipeline Configuration'
+      inputs:
+        targetType: 'inline'
+        script: |
+          Write-Host "=== Pipeline Configuration Check ==="
+          Write-Host "Azure Service Connection: $(azureSubscription)"
+          Write-Host "Web App Name: $(webAppName)"
+          Write-Host "Resource Group: $(resourceGroupName)"
+          Write-Host ""
+          
+          if ("$(azureSubscription)" -eq "YOUR_AZURE_SERVICE_CONNECTION_NAME") {
+            Write-Error "❌ SETUP REQUIRED: Please update the 'azureSubscription' variable with your actual Azure service connection name"
+            Write-Host "📋 Setup Instructions:"
+            Write-Host "1. Go to Project Settings > Service connections in Azure DevOps"
+            Write-Host "2. Create new 'Azure Resource Manager' service connection"
+            Write-Host "3. Update the 'azureSubscription' variable in this pipeline"
+            exit 1
+          }
+          
+          Write-Host "✅ Configuration looks good!"
+
 - stage: Build
   displayName: 'Build Stage'
   jobs:
