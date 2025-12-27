@@ -1,3 +1,196 @@
+# 🚀 Deploy ASP.NET Core App to Azure Web App using Docker & ACR
+
+**Tip:**
+This guide uses **updated code, Dockerfile, and .NET port configuration (port 80)**.
+**Reference Repository:**
+👉 [https://github.com/atulkamble/basic-dotnet-app](https://github.com/atulkamble/basic-dotnet-app)
+
+---
+
+## 🧩 Architecture Overview
+
+* ASP.NET Core Web App
+* Docker Container
+* Azure Container Registry (ACR)
+* Azure App Service (Web App for Containers)
+* Azure VM (for Docker build & push)
+
+---
+
+## 🔐 0. Login to Azure VM
+
+```bash
+cd Downloads
+chmod 400 vm_key.pem
+ssh -i vm_key.pem azureuser@20.244.2.138
+```
+
+---
+
+## 🐳 0.1 Install Docker on Azure VM
+
+```bash
+sudo apt update -y
+sudo apt install docker.io -y
+sudo systemctl start docker
+sudo systemctl enable docker
+docker --version
+```
+
+---
+
+## 🔑 0.2 Install Azure CLI & Login
+
+```bash
+curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
+az --version
+sudo az login
+```
+
+Login to Azure Container Registry:
+
+```bash
+sudo az acr login --name atulkamble
+```
+
+---
+
+## 📥 1. Clone ASP.NET Core Project
+
+```bash
+git clone https://github.com/atulkamble/basic-dotnet-app.git
+cd basic-dotnet-app
+```
+
+---
+
+## ▶️ 2. Run Application Locally (Optional Validation)
+
+```bash
+dotnet build
+dotnet run
+```
+
+Access locally:
+
+```
+http://localhost:5000
+```
+
+---
+
+## 🧱 3. Create Azure Container Registry (ACR)
+
+> If not already created, create an ACR from Azure Portal or CLI.
+
+**Example:**
+
+* Registry Name: `atulkamble`
+* SKU: Basic
+* Login Server: `atulkamble.azurecr.io`
+
+---
+
+## 🐳 4. Build Docker Image
+
+```bash
+sudo docker build -t atulkamble.azurecr.io/cloudnautic/basic-dotnet-app .
+```
+
+Verify image:
+
+```bash
+docker images
+```
+
+---
+
+## 📤 5. Push Docker Image to ACR
+
+```bash
+sudo docker push atulkamble.azurecr.io/cloudnautic/basic-dotnet-app
+```
+
+---
+
+## 🌐 6. Create Azure Web App (Container)
+
+From **Azure Portal**:
+
+1. Create **Web App**
+2. App Name: `atulkamble859708`
+3. Publish: **Docker Container**
+4. OS: **Linux**
+5. App Service Plan: **B1**
+6. Image Source: **Azure Container Registry**
+7. Image:
+
+   ```
+   atulkamble.azurecr.io/cloudnautic/basic-dotnet-app
+   ```
+
+---
+
+## ⚙️ 7. Configure Container Port (IMPORTANT)
+
+Go to:
+
+```
+Web App → Configuration → Application settings
+```
+
+Add setting:
+
+| Name          | Value |
+| ------------- | ----- |
+| WEBSITES_PORT | 80    |
+
+Save and Restart the Web App.
+
+---
+
+## 🔗 8. Access Deployed Application
+
+Example URL:
+
+```
+https://mywebappatulkamble98600-h7cxhccgayejgff8.canadacentral-01.azurewebsites.net/
+```
+
+You should see the ASP.NET Core UI running successfully 🎉
+
+---
+
+## 🧹 9. Cleanup (Optional)
+
+To avoid unnecessary cost:
+
+```bash
+az group delete --name <resource-group-name> --yes --no-wait
+```
+
+Or delete the **Resource Group** directly from Azure Portal.
+
+---
+
+## ✅ Key Notes
+
+* Application listens on **port 80** inside the container
+* `WEBSITES_PORT=80` is mandatory for Azure App Service
+* Docker image is pulled directly from ACR
+* B1 plan is sufficient for demo/labs
+
+---
+
+## 📌 Repository Reference
+
+🔗 [https://github.com/atulkamble/basic-dotnet-app](https://github.com/atulkamble/basic-dotnet-app)
+
+---
+
+
+
+
 # 🚀 Basic .NET Web Application – Complete Setup & Deployment Guide
 
 <div align="center">
