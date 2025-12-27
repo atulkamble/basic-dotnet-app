@@ -74,7 +74,7 @@ dotnet run
 Access locally:
 
 ```
-http://localhost:5000
+http://localhost
 ```
 
 ---
@@ -97,6 +97,10 @@ http://localhost:5000
 sudo docker build -t atulkamble.azurecr.io/cloudnautic/basic-dotnet-app .
 ```
 
+run code 
+```
+sudo docker run -d -p 80:80 atulkamble.azurecr.io/cloudnautic/basic-dotnet-app
+```
 Verify image:
 
 ```bash
