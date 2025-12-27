@@ -1,5 +1,5 @@
 # Azure DevOps Pipeline for Basic Modern Dotnet WebApp
-# This pipeline builds and deploys the .NET 8.0 web application to Azure App Service
+# This pipeline builds and optionally deploys the .NET 8.0 web application to Azure App Service
 
 trigger:
   branches:
@@ -7,67 +7,64 @@ trigger:
     - main
     - develop
 
+parameters:
+- name: enableDeployment
+  displayName: 'Enable Deployment Stages'
+  type: boolean
+  default: false
+- name: azureServiceConnection
+  displayName: 'Azure Service Connection Name'
+  type: string
+  default: 'Azure-BasicDotnetApp-Connection'
+- name: webAppName
+  displayName: 'Azure Web App Name'
+  type: string
+  default: 'basic-modern-dotnet-webapp'
+- name: resourceGroupName
+  displayName: 'Azure Resource Group Name'
+  type: string
+  default: 'rg-basic-dotnet-webapp'
+
 variables:
   # Build Variables
   buildConfiguration: 'Release'
   dotNetFramework: 'net8.0'
   dotNetVersion: '8.0.x'
   targetRuntime: 'win-x64'
-  
-  # Azure Variables - CONFIGURE BEFORE DEPLOYMENT
-  # Set these variables in Azure DevOps or update them here
-  azureSubscription: 'Azure-BasicDotnetApp-Connection'  # Create this service connection first
-  webAppName: 'basic-modern-dotnet-webapp'             # Your Azure Web App name
-  resourceGroupName: 'rg-basic-dotnet-webapp'          # Your Azure Resource Group name
-  
-  # Pipeline control variables
-  deploymentEnabled: ${{ ne(variables['azureSubscription'], 'Azure-BasicDotnetApp-Connection') }}
 
 stages:
-- stage: Validate
-  displayName: 'Validate Prerequisites'
-  jobs:
-  - job: ValidateSetup
-    displayName: 'Validate Pipeline Setup'
-    pool:
-      vmImage: 'ubuntu-latest'
-    steps:
-    - task: PowerShell@2
-      displayName: 'Check Pipeline Configuration'
-      inputs:
-        targetType: 'inline'
-        script: |
-          Write-Host "=== Pipeline Configuration Check ==="
-          Write-Host "Azure Service Connection: $(azureSubscription)"
-          Write-Host "Web App Name: $(webAppName)"
-          Write-Host "Resource Group: $(resourceGroupName)"
-          Write-Host ""
-          
-          # Check if default service connection name is being used
-          if ("$(azureSubscription)" -eq "Azure-BasicDotnetApp-Connection") {
-            Write-Host "⚠️  Using default service connection name."
-            Write-Host "📋 To enable deployments:"
-            Write-Host "   1. Run: ./setup-service-connection.sh"
-            Write-Host "   2. Create the service connection in Azure DevOps"
-            Write-Host "   3. Verify the connection name matches: $(azureSubscription)"
-            Write-Host "   4. Or update the azureSubscription variable with your connection name"
-            Write-Host ""
-            Write-Host "ℹ️  Build will continue, but deployments will be skipped."
-          } else {
-            Write-Host "✅ Using custom service connection: $(azureSubscription)"
-          }
-          
-          Write-Host "✅ Configuration validated!"
-
 - stage: Build
   displayName: 'Build Stage'
   jobs:
   - job: Build
     displayName: 'Build Job'
     pool:
-      vmImage: 'windows-latest' # Use Windows agent for .NET applications
+      vmImage: 'windows-latest'
     
     steps:
+    - task: PowerShell@2
+      displayName: 'Pipeline Configuration'
+      inputs:
+        targetType: 'inline'
+        script: |
+          Write-Host "=== Pipeline Configuration ===" -ForegroundColor Green
+          Write-Host "Deployment Enabled: ${{ parameters.enableDeployment }}"
+          Write-Host "Service Connection: ${{ parameters.azureServiceConnection }}"
+          Write-Host "Web App Name: ${{ parameters.webAppName }}"
+          Write-Host "Resource Group: ${{ parameters.resourceGroupName }}"
+          Write-Host "Branch: $(Build.SourceBranch)"
+          Write-Host ""
+          
+          if ("${{ parameters.enableDeployment }}" -eq "False") {
+            Write-Host "ℹ️  Deployment stages are disabled." -ForegroundColor Yellow
+            Write-Host "   To enable deployments:" -ForegroundColor Yellow
+            Write-Host "   1. Set up Azure service connection: ${{ parameters.azureServiceConnection }}" -ForegroundColor Yellow
+            Write-Host "   2. Run pipeline with 'enableDeployment' = true" -ForegroundColor Yellow
+            Write-Host "   3. Or use the automated setup: ./setup-service-connection.sh" -ForegroundColor Yellow
+          } else {
+            Write-Host "✅ Deployment stages are enabled!" -ForegroundColor Green
+          }
+    
     - task: UseDotNet@2
       displayName: 'Install .NET SDK'
       inputs:
@@ -95,7 +92,7 @@ stages:
         command: 'test'
         projects: '**/*Test*.csproj'
         arguments: '--configuration $(buildConfiguration) --no-build --verbosity normal --collect:"XPlat Code Coverage" --results-directory $(Agent.TempDirectory)'
-      continueOnError: true # Continue even if tests fail
+      continueOnError: true
     
     - task: PublishCodeCoverageResults@1
       displayName: 'Publish Code Coverage'
@@ -120,138 +117,131 @@ stages:
         ArtifactName: 'webapp-artifacts'
         publishLocation: 'Container'
 
-- stage: Deploy_Development
-  displayName: 'Deploy to Development'
-  dependsOn: Build
-  condition: |
-    and(
-      succeeded(),
-      eq(variables['Build.SourceBranch'], 'refs/heads/develop'),
-      ne(variables['azureSubscription'], 'Azure-BasicDotnetApp-Connection')
-    )
-  jobs:
-  - deployment: Deploy_Dev
-    displayName: 'Deploy to Dev Environment'
-    pool:
-      vmImage: 'windows-latest'
-    environment: 'Development'
-    variables:
-      webAppName: '$(webAppName)-dev'
-    strategy:
-      runOnce:
-        deploy:
-          steps:
-          - task: AzureWebApp@1
-            displayName: 'Deploy to Azure Web App (Dev)'
-            inputs:
-              azureSubscription: $(azureSubscription)
-              appType: 'webApp'
-              appName: $(webAppName)
-              resourceGroupName: $(resourceGroupName)
-              package: '$(Pipeline.Workspace)/webapp-artifacts/**/*.zip'
-              deploymentMethod: 'auto'
-              appSettings: |
-                -ASPNETCORE_ENVIRONMENT Development
-                -ASPNETCORE_HTTP_PORTS 80
+# Conditional Deployment Stages - Only included when enableDeployment is true
+${{ if eq(parameters.enableDeployment, true) }}:
+  - stage: Deploy_Development
+    displayName: 'Deploy to Development'
+    dependsOn: Build
+    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/develop'))
+    jobs:
+    - deployment: Deploy_Dev
+      displayName: 'Deploy to Dev Environment'
+      pool:
+        vmImage: 'windows-latest'
+      environment: 'Development'
+      variables:
+        webAppName: '${{ parameters.webAppName }}-dev'
+      strategy:
+        runOnce:
+          deploy:
+            steps:
+            - task: AzureWebApp@1
+              displayName: 'Deploy to Azure Web App (Dev)'
+              inputs:
+                azureSubscription: '${{ parameters.azureServiceConnection }}'
+                appType: 'webApp'
+                appName: '$(webAppName)'
+                resourceGroupName: '${{ parameters.resourceGroupName }}'
+                package: '$(Pipeline.Workspace)/webapp-artifacts/**/*.zip'
+                deploymentMethod: 'auto'
+                appSettings: |
+                  -ASPNETCORE_ENVIRONMENT Development
+                  -ASPNETCORE_HTTP_PORTS 80
 
-- stage: Deploy_Production
-  displayName: 'Deploy to Production'
-  dependsOn: Build
-  condition: |
-    and(
-      succeeded(),
-      eq(variables['Build.SourceBranch'], 'refs/heads/main'),
-      ne(variables['azureSubscription'], 'Azure-BasicDotnetApp-Connection')
-    )
-  jobs:
-  - deployment: Deploy_Prod
-    displayName: 'Deploy to Production Environment'
-    pool:
-      vmImage: 'windows-latest'
-    environment: 'Production'
-    strategy:
-      runOnce:
-        deploy:
-          steps:
-          - task: AzureWebApp@1
-            displayName: 'Deploy to Azure Web App (Production)'
-            inputs:
-              azureSubscription: $(azureSubscription)
-              appType: 'webApp'
-              appName: $(webAppName)
-              resourceGroupName: $(resourceGroupName)
-              package: '$(Pipeline.Workspace)/webapp-artifacts/**/*.zip'
-              deploymentMethod: 'auto'
-              appSettings: |
-                -ASPNETCORE_ENVIRONMENT Production
-                -ASPNETCORE_HTTP_PORTS 80
-                -ASPNETCORE_HTTPS_PORT 443
+  - stage: Deploy_Production
+    displayName: 'Deploy to Production'
+    dependsOn: Build
+    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+    jobs:
+    - deployment: Deploy_Prod
+      displayName: 'Deploy to Production Environment'
+      pool:
+        vmImage: 'windows-latest'
+      environment: 'Production'
+      strategy:
+        runOnce:
+          deploy:
+            steps:
+            - task: AzureWebApp@1
+              displayName: 'Deploy to Azure Web App (Production)'
+              inputs:
+                azureSubscription: '${{ parameters.azureServiceConnection }}'
+                appType: 'webApp'
+                appName: '${{ parameters.webAppName }}'
+                resourceGroupName: '${{ parameters.resourceGroupName }}'
+                package: '$(Pipeline.Workspace)/webapp-artifacts/**/*.zip'
+                deploymentMethod: 'auto'
+                appSettings: |
+                  -ASPNETCORE_ENVIRONMENT Production
+                  -ASPNETCORE_HTTP_PORTS 80
+                  -ASPNETCORE_HTTPS_PORT 443
 
-# Deployment Summary Stage
-- stage: DeploymentSummary
-  displayName: 'Deployment Summary'
-  dependsOn: 
-  - Build
-  - Deploy_Development
-  - Deploy_Production
+  - stage: HealthCheck
+    displayName: 'Health Check'
+    dependsOn: 
+    - Deploy_Development
+    - Deploy_Production
+    condition: or(succeeded('Deploy_Development'), succeeded('Deploy_Production'))
+    jobs:
+    - job: HealthCheck
+      displayName: 'Verify Deployment'
+      pool:
+        vmImage: 'ubuntu-latest'
+      steps:
+      - task: PowerShell@2
+        displayName: 'Health Check - Production'
+        inputs:
+          targetType: 'inline'
+          script: |
+            $url = "https://${{ parameters.webAppName }}.azurewebsites.net"
+            Write-Host "Checking health of: $url"
+            
+            try {
+              $response = Invoke-WebRequest -Uri $url -TimeoutSec 30
+              if ($response.StatusCode -eq 200) {
+                Write-Host "✅ Health check passed! Status: $($response.StatusCode)"
+              } else {
+                Write-Warning "⚠️ Unexpected status code: $($response.StatusCode)"
+              }
+            } catch {
+              Write-Error "❌ Health check failed: $($_.Exception.Message)"
+              exit 1
+            }
+        condition: eq(variables['Build.SourceBranch'], 'refs/heads/main')
+
+# Summary stage always runs
+- stage: Summary
+  displayName: 'Pipeline Summary'
+  dependsOn: Build
   condition: always()
   jobs:
   - job: Summary
-    displayName: 'Show Deployment Status'
+    displayName: 'Show Pipeline Status'
     pool:
       vmImage: 'ubuntu-latest'
     steps:
     - task: PowerShell@2
-      displayName: 'Deployment Summary'
+      displayName: 'Pipeline Summary'
       inputs:
         targetType: 'inline'
         script: |
-          Write-Host "=== Deployment Summary ==="
-          Write-Host "Branch: $(Build.SourceBranch)"
-          Write-Host "Service Connection: $(azureSubscription)"
+          Write-Host "=== Pipeline Execution Summary ===" -ForegroundColor Green
+          Write-Host ""
+          Write-Host "Configuration:"
+          Write-Host "  Branch: $(Build.SourceBranch)"
+          Write-Host "  Deployment Enabled: ${{ parameters.enableDeployment }}"
+          Write-Host "  Service Connection: ${{ parameters.azureServiceConnection }}"
+          Write-Host ""
           
-          if ("$(azureSubscription)" -eq "Azure-BasicDotnetApp-Connection") {
-            Write-Host "📋 Setup Required:"
-            Write-Host "   Deployments were skipped because service connection is not configured."
-            Write-Host "   Run './setup-service-connection.sh' to create the required service connection."
+          if ("${{ parameters.enableDeployment }}" -eq "False") {
+            Write-Host "📦 Build completed successfully!" -ForegroundColor Green
+            Write-Host "🔧 Ready to deploy when service connection is set up." -ForegroundColor Yellow
+            Write-Host ""
+            Write-Host "Next Steps:" -ForegroundColor Cyan
+            Write-Host "1. Run: ./setup-service-connection.sh"
+            Write-Host "2. Create service connection in Azure DevOps"
+            Write-Host "3. Run pipeline again with enableDeployment=true"
           } else {
-            Write-Host "✅ Using configured service connection for deployments."
+            Write-Host "🚀 Full pipeline execution completed!" -ForegroundColor Green
+            Write-Host "✅ Build and deployment stages executed." -ForegroundColor Green
           }
-
-# Health Check Stage (Optional)
-- stage: HealthCheck
-  displayName: 'Health Check'
-  dependsOn: 
-  - Deploy_Development
-  - Deploy_Production
-  condition: |
-    and(
-      or(succeeded('Deploy_Development'), succeeded('Deploy_Production')),
-      ne(variables['azureSubscription'], 'Azure-BasicDotnetApp-Connection')
-    )
-  jobs:
-  - job: HealthCheck
-    displayName: 'Verify Deployment'
-    pool:
-      vmImage: 'ubuntu-latest'
-    steps:
-    - task: PowerShell@2
-      displayName: 'Health Check - Production'
-      inputs:
-        targetType: 'inline'
-        script: |
-          $url = "https://$(webAppName).azurewebsites.net"
-          Write-Host "Checking health of: $url"
-          
-          try {
-            $response = Invoke-WebRequest -Uri $url -TimeoutSec 30
-            if ($response.StatusCode -eq 200) {
-              Write-Host "✅ Health check passed! Status: $($response.StatusCode)"
-            } else {
-              Write-Warning "⚠️ Unexpected status code: $($response.StatusCode)"
-            }
-          } catch {
-            Write-Error "❌ Health check failed: $($_.Exception.Message)"
-            exit 1
-          }
-      condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
