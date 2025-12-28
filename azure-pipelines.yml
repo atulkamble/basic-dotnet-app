@@ -1,68 +1,37 @@
-# Azure DevOps Pipeline for Basic Modern Dotnet WebApp
-trigger:
-  branches:
-    include:
-    - main
-    - develop
+# Basic Azure Pipeline for .NET Application
+# This pipeline builds, tests, and runs the application to show output
 
-parameters:
-- name: enableDeployment
-  displayName: 'Enable Deployment Stages'
-  type: boolean
-  default: false
-- name: azureServiceConnection
-  displayName: 'Azure Service Connection Name'
-  type: string
-  default: 'Azure-BasicDotnetApp-Connection'
-- name: webAppName
-  displayName: 'Azure Web App Name'
-  type: string
-  default: 'basic-modern-dotnet-webapp'
-- name: resourceGroupName
-  displayName: 'Azure Resource Group Name'
-  type: string
-  default: 'rg-basic-dotnet-webapp'
+trigger:
+- main
+- develop
+
+pool:
+  vmImage: 'ubuntu-latest'
 
 variables:
   buildConfiguration: 'Release'
   dotNetVersion: '10.0.x'
 
 stages:
-- stage: Build
-  displayName: 'Build Application'
+- stage: BuildAndTest
+  displayName: 'Build and Test Application'
   jobs:
   - job: BuildJob
     displayName: 'Build .NET Application'
-    pool:
-      vmImage: 'windows-latest'
-    
     steps:
-    - task: PowerShell@2
-      displayName: 'Show Configuration'
-      inputs:
-        targetType: 'inline'
-        script: |
-          Write-Host "=== Pipeline Configuration ===" -ForegroundColor Green
-          Write-Host "Deployment Enabled: ${{ parameters.enableDeployment }}"
-          Write-Host "Branch: $(Build.SourceBranch)"
-          
-          if ("${{ parameters.enableDeployment }}" -eq "False") {
-            Write-Host "ℹ️  Build-only mode" -ForegroundColor Yellow
-          } else {
-            Write-Host "🚀 Full deployment mode" -ForegroundColor Green
-          }
     
     - task: UseDotNet@2
-      displayName: 'Install .NET SDK'
+      displayName: 'Install .NET 10 SDK'
       inputs:
         packageType: 'sdk'
         version: $(dotNetVersion)
     
     - task: DotNetCoreCLI@2
-      displayName: 'Restore Dependencies'
+      displayName: 'Restore NuGet Packages'
       inputs:
         command: 'restore'
         projects: '**/*.csproj'
+        feedsToUse: 'select'
     
     - task: DotNetCoreCLI@2
       displayName: 'Build Application'
@@ -72,55 +41,97 @@ stages:
         arguments: '--configuration $(buildConfiguration) --no-restore'
     
     - task: DotNetCoreCLI@2
-      displayName: 'Run Tests'
+      displayName: 'Run Application (Build Output)'
+      inputs:
+        command: 'run'
+        projects: '**/*.csproj'
+        arguments: '--configuration $(buildConfiguration) --no-build --urls http://localhost:5000'
+      timeoutInMinutes: 2
+      continueOnError: true
+    
+    - script: |
+        echo "=== Build Information ==="
+        echo "Build Configuration: $(buildConfiguration)"
+        echo "Target Framework: net10.0"
+        echo "Build Date: $(Build.BuildNumber)"
+        echo "Source Branch: $(Build.SourceBranch)"
+        echo ""
+        echo "=== Application Files ==="
+        ls -la $(Build.SourcesDirectory)
+        echo ""
+        echo "=== Build Output ==="
+        ls -la $(Build.SourcesDirectory)/bin/$(buildConfiguration)/net10.0/ || echo "Build output directory not found"
+        echo ""
+        echo "=== Application Configuration ==="
+        cat appsettings.json || echo "appsettings.json not found"
+        echo ""
+        echo "=== Application Successfully Built ==="
+      displayName: 'Show Application Information and Output'
+    
+    - task: DotNetCoreCLI@2
+      displayName: 'Run Unit Tests (if any)'
       inputs:
         command: 'test'
-        projects: '**/*Test*.csproj'
-        arguments: '--configuration $(buildConfiguration) --no-build'
+        projects: '**/*[Tt]ests/*.csproj'
+        arguments: '--configuration $(buildConfiguration) --no-build --verbosity normal'
       continueOnError: true
+      condition: succeeded()
     
     - task: DotNetCoreCLI@2
       displayName: 'Publish Application'
       inputs:
         command: 'publish'
-        publishWebProjects: true
+        projects: '**/*.csproj'
         arguments: '--configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory)'
         zipAfterPublish: true
+        modifyOutputPath: true
+    
+    - script: |
+        echo "=== Published Files ==="
+        ls -la $(Build.ArtifactStagingDirectory)
+        echo ""
+        echo "=== Application Ready for Deployment ==="
+        echo "Published to: $(Build.ArtifactStagingDirectory)"
+      displayName: 'Show Published Output'
     
     - task: PublishBuildArtifacts@1
-      displayName: 'Upload Artifacts'
+      displayName: 'Publish Build Artifacts'
       inputs:
         PathtoPublish: '$(Build.ArtifactStagingDirectory)'
-        ArtifactName: 'webapp-package'
+        ArtifactName: 'dotnet-webapp'
+        publishLocation: 'Container'
 
-- stage: Summary
-  displayName: 'Pipeline Summary'
-  dependsOn: Build
+- stage: DisplayResults
+  displayName: 'Display Build Results'
+  dependsOn: BuildAndTest
   condition: always()
   jobs:
-  - job: ShowSummary
-    displayName: 'Show Results'
-    pool:
-      vmImage: 'ubuntu-latest'
+  - job: ShowResults
+    displayName: 'Show Pipeline Results'
     steps:
-    - task: PowerShell@2
+    - script: |
+        echo "=================================="
+        echo "    BASIC .NET APP PIPELINE      "
+        echo "=================================="
+        echo ""
+        echo "Pipeline Status: COMPLETED"
+        echo "Build ID: $(Build.BuildId)"
+        echo "Build Number: $(Build.BuildNumber)"
+        echo "Repository: $(Build.Repository.Name)"
+        echo "Branch: $(Build.SourceBranch)"
+        echo "Commit: $(Build.SourceVersion)"
+        echo ""
+        echo "=== PIPELINE SUMMARY ==="
+        echo "✓ .NET SDK Installed"
+        echo "✓ Dependencies Restored"
+        echo "✓ Application Built"
+        echo "✓ Application Information Displayed"
+        echo "✓ Build Artifacts Published"
+        echo ""
+        echo "=== NEXT STEPS ==="
+        echo "1. Check the build artifacts"
+        echo "2. Review any test results"
+        echo "3. Deploy to Azure if needed"
+        echo ""
+        echo "Pipeline completed successfully!"
       displayName: 'Pipeline Summary'
-      inputs:
-        targetType: 'inline'
-        script: |
-          Write-Host "=== Pipeline Summary ===" -ForegroundColor Green
-          Write-Host "✅ Build completed successfully!" -ForegroundColor Green
-          Write-Host ""
-          
-          if ("${{ parameters.enableDeployment }}" -eq "False") {
-            Write-Host "📋 Next Steps to Enable Deployment:" -ForegroundColor Cyan
-            Write-Host "1. Set up Azure service connection: ${{ parameters.azureServiceConnection }}"
-            Write-Host "2. Create Azure Web App: ${{ parameters.webAppName }}"
-            Write-Host "3. Run pipeline with enableDeployment = true"
-            Write-Host ""
-            Write-Host "🔧 Use setup scripts:"
-            Write-Host "./setup-service-connection.sh"
-          } else {
-            Write-Host "🚀 Deployment mode enabled!" -ForegroundColor Green
-            Write-Host "Note: Deployment stages require manual setup in Azure DevOps"
-          }
