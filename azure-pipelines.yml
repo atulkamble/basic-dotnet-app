@@ -57,7 +57,8 @@ stages:
         command: 'publish'
         projects: '**/*.csproj'
         arguments: '--configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory) --no-restore --no-build'
-        zipAfterPublish: false
+        zipAfterPublish: true
+        modifyOutputPath: true
     
     - task: PublishBuildArtifacts@1
       displayName: 'Publish Build Artifacts'
@@ -95,11 +96,8 @@ stages:
               appType: 'webApp'
               appName: '$(webAppName)'
               resourceGroupName: '$(resourceGroupName)'
-              package: '$(Pipeline.Workspace)/$(artifactName)/**'
+              package: '$(Pipeline.Workspace)/$(artifactName)/**/*.zip'
               deploymentMethod: 'auto'
-              enableCustomDeployment: true
-              removeAdditionalFilesFlag: true
-              excludeFilesFromAppDataFlag: false
           
           - task: AzureAppServiceManage@0
             displayName: 'Start Azure Web App'
