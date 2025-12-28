@@ -39,6 +39,9 @@ http://localhost
 4. Build Image 
 
 sudo docker build -t atulkamble.azurecr.io/cloudnautic/basic-dotnet-app .
+or
+sudo docker buildx build -t atulkamble.azurecr.io/cloudnautic/basic-dotnet-app:latest --load .
+
 
 5. Push Image to ACR 
 
