@@ -95,6 +95,9 @@ http://localhost
 
 ```bash
 sudo docker build -t atulkamble.azurecr.io/cloudnautic/basic-dotnet-app .
+or
+sudo docker buildx build -t atulkamble.azurecr.io/cloudnautic/basic-dotnet-app:latest --load .
+
 ```
 
 run code 
