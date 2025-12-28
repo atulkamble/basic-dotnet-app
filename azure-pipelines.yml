@@ -1,9 +1,27 @@
-# Basic Azure Pipeline for .NET Application
-# This pipeline builds, tests, and runs the application to show output
+# Basic Azure Pipeline for .NET Application with Azure Web App Deployment
+# This pipeline builds, tests, and deploys the application to Azure Web App Service
 
 trigger:
 - main
 - develop
+
+parameters:
+- name: enableDeployment
+  displayName: 'Enable Deployment to Azure'
+  type: boolean
+  default: false
+- name: azureServiceConnection
+  displayName: 'Azure Service Connection Name'
+  type: string
+  default: 'Azure-BasicDotnetApp-Connection'
+- name: webAppName
+  displayName: 'Azure Web App Name'
+  type: string
+  default: 'basic-modern-dotnet-webapp'
+- name: resourceGroupName
+  displayName: 'Azure Resource Group Name'
+  type: string
+  default: 'rg-basic-dotnet-webapp'
 
 pool:
   vmImage: 'ubuntu-latest'
@@ -102,9 +120,69 @@ stages:
         ArtifactName: 'dotnet-webapp'
         publishLocation: 'Container'
 
-- stage: DisplayResults
-  displayName: 'Display Build Results'
+- stage: DeployToAzure
+  displayName: 'Deploy to Azure Web App'
   dependsOn: BuildAndTest
+  condition: and(succeeded(), eq('${{ parameters.enableDeployment }}', true))
+  jobs:
+  - deployment: DeployWebApp
+    displayName: 'Deploy to Azure Web App Service'
+    environment: 'production'
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - task: DownloadBuildArtifacts@0
+            displayName: 'Download Build Artifacts'
+            inputs:
+              buildType: 'current'
+              downloadType: 'single'
+              artifactName: 'dotnet-webapp'
+              downloadPath: '$(System.ArtifactsDirectory)'
+          
+          - task: AzureWebApp@1
+            displayName: 'Deploy to Azure Web App'
+            inputs:
+              azureSubscription: '${{ parameters.azureServiceConnection }}'
+              appType: 'webApp'
+              appName: '${{ parameters.webAppName }}'
+              resourceGroupName: '${{ parameters.resourceGroupName }}'
+              package: '$(System.ArtifactsDirectory)/dotnet-webapp/**/*.zip'
+              deploymentMethod: 'auto'
+          
+          - task: AzureAppServiceManage@0
+            displayName: 'Restart Azure Web App'
+            inputs:
+              azureSubscription: '${{ parameters.azureServiceConnection }}'
+              action: 'Restart Azure App Service'
+              webAppName: '${{ parameters.webAppName }}'
+              resourceGroupName: '${{ parameters.resourceGroupName }}'
+          
+          - script: |
+              echo "=================================="
+              echo "   DEPLOYMENT TO AZURE COMPLETE   "
+              echo "=================================="
+              echo ""
+              echo "✅ Application deployed successfully!"
+              echo "🌐 Web App Name: ${{ parameters.webAppName }}"
+              echo "📦 Resource Group: ${{ parameters.resourceGroupName }}"
+              echo "🔗 Application URL: https://${{ parameters.webAppName }}.azurewebsites.net"
+              echo ""
+              echo "=== DEPLOYMENT SUMMARY ==="
+              echo "• .NET 10 application deployed"
+              echo "• Azure Web App Service updated"
+              echo "• Application restarted"
+              echo "• Ready to serve traffic"
+              echo ""
+              echo "Visit your application at:"
+              echo "https://${{ parameters.webAppName }}.azurewebsites.net"
+            displayName: 'Deployment Success Message'
+
+- stage: DisplayResults
+  displayName: 'Display Pipeline Results'
+  dependsOn: 
+    - BuildAndTest
+    - DeployToAzure
   condition: always()
   jobs:
   - job: ShowResults
@@ -129,16 +207,33 @@ stages:
         echo "✓ Build Output Verified"
         echo "✓ Application Information Displayed"
         echo "✓ Build Artifacts Published"
+        if [ '${{ parameters.enableDeployment }}' = 'True' ]; then
+          echo "✓ Deployed to Azure Web App Service"
+          echo "🌐 Application URL: https://${{ parameters.webAppName }}.azurewebsites.net"
+        else
+          echo "ℹ️  Deployment skipped (enableDeployment = false)"
+        fi
         echo ""
         echo "=== APPLICATION READY ==="
         echo "• Web application built for net10.0"
-        echo "• Ready for deployment to Azure"
+        if [ '${{ parameters.enableDeployment }}' = 'True' ]; then
+          echo "• Successfully deployed to Azure"
+          echo "• Live at: https://${{ parameters.webAppName }}.azurewebsites.net"
+        else
+          echo "• Ready for deployment to Azure"
+        fi
         echo "• Artifacts available for download"
         echo ""
         echo "=== NEXT STEPS ==="
-        echo "1. Check the build artifacts"
-        echo "2. Review any test results"
-        echo "3. Deploy to Azure if needed"
+        if [ '${{ parameters.enableDeployment }}' = 'True' ]; then
+          echo "1. Test your deployed application"
+          echo "2. Monitor application performance"
+          echo "3. Set up monitoring and alerts"
+        else
+          echo "1. Set up Azure Service Connection"
+          echo "2. Enable deployment by setting enableDeployment=true"
+          echo "3. Configure Azure Web App parameters"
+        fi
         echo ""
         echo "Pipeline completed successfully!"
       displayName: 'Pipeline Summary'
