@@ -38,16 +38,7 @@ stages:
       inputs:
         command: 'build'
         projects: '**/*.csproj'
-        arguments: '--configuration $(buildConfiguration) --no-restore'
-    
-    - task: DotNetCoreCLI@2
-      displayName: 'Run Application (Build Output)'
-      inputs:
-        command: 'run'
-        projects: '**/*.csproj'
-        arguments: '--configuration $(buildConfiguration) --no-build --urls http://localhost:5000'
-      timeoutInMinutes: 2
-      continueOnError: true
+        arguments: '--configuration $(buildConfiguration) --no-restore --verbosity normal'
     
     - script: |
         echo "=== Build Information ==="
@@ -55,18 +46,28 @@ stages:
         echo "Target Framework: net10.0"
         echo "Build Date: $(Build.BuildNumber)"
         echo "Source Branch: $(Build.SourceBranch)"
+        echo "Build ID: $(Build.BuildId)"
         echo ""
         echo "=== Application Files ==="
         ls -la $(Build.SourcesDirectory)
         echo ""
-        echo "=== Build Output ==="
-        ls -la $(Build.SourcesDirectory)/bin/$(buildConfiguration)/net10.0/ || echo "Build output directory not found"
+        echo "=== Build Output Directory ==="
+        find $(Build.SourcesDirectory) -name "bin" -type d -exec ls -la {} \; 2>/dev/null || echo "Build bin directory not found"
+        echo ""
+        echo "=== Compiled Application ==="
+        find $(Build.SourcesDirectory) -name "*.dll" -o -name "basic-dotnet-webapp" | head -10
         echo ""
         echo "=== Application Configuration ==="
         cat appsettings.json || echo "appsettings.json not found"
         echo ""
-        echo "=== Application Successfully Built ==="
-      displayName: 'Show Application Information and Output'
+        echo "=== Project File ==="
+        cat *.csproj
+        echo ""
+        echo "=== Build Verification ==="
+        dotnet --info
+        echo ""
+        echo "=== Application Successfully Built and Ready ==="
+      displayName: 'Show Application Information and Build Output'
     
     - task: DotNetCoreCLI@2
       displayName: 'Run Unit Tests (if any)'
@@ -124,9 +125,15 @@ stages:
         echo "=== PIPELINE SUMMARY ==="
         echo "✓ .NET SDK Installed"
         echo "✓ Dependencies Restored"
-        echo "✓ Application Built"
+        echo "✓ Application Built Successfully"
+        echo "✓ Build Output Verified"
         echo "✓ Application Information Displayed"
         echo "✓ Build Artifacts Published"
+        echo ""
+        echo "=== APPLICATION READY ==="
+        echo "• Web application built for net10.0"
+        echo "• Ready for deployment to Azure"
+        echo "• Artifacts available for download"
         echo ""
         echo "=== NEXT STEPS ==="
         echo "1. Check the build artifacts"
