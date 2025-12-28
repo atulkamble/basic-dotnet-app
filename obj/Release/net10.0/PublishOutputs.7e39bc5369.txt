@@ -1,0 +1,8 @@
+/Users/atul/Downloads/basic-dotnet-app/publish/basic-dotnet-webapp
+/Users/atul/Downloads/basic-dotnet-app/publish/appsettings.Development.json
+/Users/atul/Downloads/basic-dotnet-app/publish/appsettings.json
+/Users/atul/Downloads/basic-dotnet-app/publish/azure-infrastructure.json
+/Users/atul/Downloads/basic-dotnet-app/publish/basic-dotnet-webapp.dll
+/Users/atul/Downloads/basic-dotnet-app/publish/basic-dotnet-webapp.deps.json
+/Users/atul/Downloads/basic-dotnet-app/publish/basic-dotnet-webapp.runtimeconfig.json
+/Users/atul/Downloads/basic-dotnet-app/publish/basic-dotnet-webapp.pdb
