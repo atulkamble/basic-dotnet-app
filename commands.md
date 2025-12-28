@@ -60,7 +60,35 @@ https://mywebappatulkamble98600-h7cxhccgayejgff8.canadacentral-01.azurewebsites.
 9. delete Resource Group 
 
 
+// Deploy Dotnet App to Azure WebApp Servive using Azure Pipeline
 
+https://github.com/atulkamble/basic-dotnet-app
 
+1. Create Dotnet Project, Build, Run Locally 
+2. Create Dockerfile (optional)
+3. Push to Github Repo 
+4. Create azure-pipelines.yml 
+5. Create Project >> Azure Devops >> Create Pipeline >> select repo 
+6. Pipeline settings >> service connection >> Azure Resource Manager >> select subscription, resource group,, AzureServiceConnection >> name it >> allow 
+7. Pipeline >> azure-piplines.yml >> Service name, webapp name, resource group name 
+8. Pipline Build and Run 
+9. Azure WebApp Service URL >> Check 
+10. troubleshooting 
+
+Tip: Agent OS, Service conection, Pipeline Settings (Authorization) Allow
+
+Stages - pipeline >> step by step >> Build >> Deploy 
+Portal Settings >> Pipeline Setting should match as per Variables 
+
+az webapp deploy 
+
+Subscription ID: 50818730-e898-4bc4-bc35-d9983d719
+Subscription Name: Pay-As-You-Go
+Service Principal ID: 000e535c-f31e-4a10-a3a8-f06d5e326d
+Service Principal Key: 03F8Q~4kqCey8wY-uoG5kPKkR4_e6XbQnbqM  
+
+Tenant ID: bc281606-c655-4c05-90f2-49309a59c59f
+Service connection name: Azure-BasicDotnetApp-Connection
+Description: Service connection for basic dotnet webapp deployment
 
 ```
