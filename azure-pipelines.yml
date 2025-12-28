@@ -120,69 +120,87 @@ stages:
         ArtifactName: 'dotnet-webapp'
         publishLocation: 'Container'
 
-- stage: DeployToAzure
-  displayName: 'Deploy to Azure Web App'
-  dependsOn: BuildAndTest
-  condition: and(succeeded(), eq('${{ parameters.enableDeployment }}', true))
-  jobs:
-  - deployment: DeployWebApp
-    displayName: 'Deploy to Azure Web App Service'
-    environment: 'production'
-    strategy:
-      runOnce:
-        deploy:
-          steps:
-          - task: DownloadBuildArtifacts@0
-            displayName: 'Download Build Artifacts'
-            inputs:
-              buildType: 'current'
-              downloadType: 'single'
-              artifactName: 'dotnet-webapp'
-              downloadPath: '$(System.ArtifactsDirectory)'
-          
-          - task: AzureWebApp@1
-            displayName: 'Deploy to Azure Web App'
-            inputs:
-              azureSubscription: '${{ parameters.azureServiceConnection }}'
-              appType: 'webApp'
-              appName: '${{ parameters.webAppName }}'
-              resourceGroupName: '${{ parameters.resourceGroupName }}'
-              package: '$(System.ArtifactsDirectory)/dotnet-webapp/**/*.zip'
-              deploymentMethod: 'auto'
-          
-          - task: AzureAppServiceManage@0
-            displayName: 'Restart Azure Web App'
-            inputs:
-              azureSubscription: '${{ parameters.azureServiceConnection }}'
-              action: 'Restart Azure App Service'
-              webAppName: '${{ parameters.webAppName }}'
-              resourceGroupName: '${{ parameters.resourceGroupName }}'
-          
-          - script: |
-              echo "=================================="
-              echo "   DEPLOYMENT TO AZURE COMPLETE   "
-              echo "=================================="
-              echo ""
-              echo "✅ Application deployed successfully!"
-              echo "🌐 Web App Name: ${{ parameters.webAppName }}"
-              echo "📦 Resource Group: ${{ parameters.resourceGroupName }}"
-              echo "🔗 Application URL: https://${{ parameters.webAppName }}.azurewebsites.net"
-              echo ""
-              echo "=== DEPLOYMENT SUMMARY ==="
-              echo "• .NET 10 application deployed"
-              echo "• Azure Web App Service updated"
-              echo "• Application restarted"
-              echo "• Ready to serve traffic"
-              echo ""
-              echo "Visit your application at:"
-              echo "https://${{ parameters.webAppName }}.azurewebsites.net"
-            displayName: 'Deployment Success Message'
+- ${{ if eq(parameters.enableDeployment, true) }}:
+  - stage: DeployToAzure
+    displayName: 'Deploy to Azure Web App'
+    dependsOn: BuildAndTest
+    jobs:
+    - deployment: DeployWebApp
+      displayName: 'Deploy to Azure Web App Service'
+      environment: 'production'
+      strategy:
+        runOnce:
+          deploy:
+            steps:
+            - task: DownloadBuildArtifacts@0
+              displayName: 'Download Build Artifacts'
+              inputs:
+                buildType: 'current'
+                downloadType: 'single'
+                artifactName: 'dotnet-webapp'
+                downloadPath: '$(System.ArtifactsDirectory)'
+            
+            - task: AzureWebApp@1
+              displayName: 'Deploy to Azure Web App'
+              inputs:
+                azureSubscription: '${{ parameters.azureServiceConnection }}'
+                appType: 'webApp'
+                appName: '${{ parameters.webAppName }}'
+                resourceGroupName: '${{ parameters.resourceGroupName }}'
+                package: '$(System.ArtifactsDirectory)/dotnet-webapp/**/*.zip'
+                deploymentMethod: 'auto'
+            
+            - task: AzureAppServiceManage@0
+              displayName: 'Restart Azure Web App'
+              inputs:
+                azureSubscription: '${{ parameters.azureServiceConnection }}'
+                action: 'Restart Azure App Service'
+                webAppName: '${{ parameters.webAppName }}'
+                resourceGroupName: '${{ parameters.resourceGroupName }}'
+            
+            - script: |
+                echo "=================================="
+                echo "   DEPLOYMENT TO AZURE COMPLETE   "
+                echo "=================================="
+                echo ""
+                echo "✅ Application deployed successfully!"
+                echo "🌐 Web App Name: ${{ parameters.webAppName }}"
+                echo "📦 Resource Group: ${{ parameters.resourceGroupName }}"
+                echo "🔗 Application URL: https://${{ parameters.webAppName }}.azurewebsites.net"
+                echo ""
+                echo "=== DEPLOYMENT SUMMARY ==="
+                echo "• .NET 10 application deployed"
+                echo "• Azure Web App Service updated"
+                echo "• Application restarted"
+                echo "• Ready to serve traffic"
+                echo ""
+                echo "Visit your application at:"
+                echo "https://${{ parameters.webAppName }}.azurewebsites.net"
+              displayName: 'Deployment Success Message'
+
+- ${{ if eq(parameters.enableDeployment, true) }}:
+  - stage: DeploymentComplete
+    displayName: 'Deployment Complete'
+    dependsOn: DeployToAzure
+    jobs:
+    - job: DeploymentSuccess
+      displayName: 'Deployment Success Verification'
+      steps:
+      - script: |
+          echo "🎉 DEPLOYMENT COMPLETED SUCCESSFULLY!"
+          echo ""
+          echo "Your .NET application is now live at:"
+          echo "🌐 https://${{ parameters.webAppName }}.azurewebsites.net"
+          echo ""
+          echo "Next steps:"
+          echo "• Test your application functionality"
+          echo "• Monitor performance and logs"
+          echo "• Set up custom domain (if needed)"
+        displayName: 'Deployment Success Message'
 
 - stage: DisplayResults
   displayName: 'Display Pipeline Results'
-  dependsOn: 
-    - BuildAndTest
-    - DeployToAzure
+  dependsOn: BuildAndTest
   condition: always()
   jobs:
   - job: ShowResults
